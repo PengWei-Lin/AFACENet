@@ -24,7 +24,7 @@ note: you can change the configuration in ddd_3dop.sh
 
 or
 
-python3 ./src/demo.py --task ddd --arch dlapreason_34 --load_model ./exp/ddd/3dop_dlap_reasonable_nc/model_last.pth --demo ./videos/24_2022-05-11.mp4 --dataset kitti --input_h 480 --input_w 640
+python3 ./src/demo.py --task ddd --arch dlapreason_34 --load_model ./exp/ddd/3dop_dlap_reasonable_nc/model_last.pth --dataset kitti --demo single_image_image_folder_or_video
 
 note: you can change the configuration in Monocular_3D_Detection_demo.sh
 
