@@ -14,3 +14,9 @@ The respository is for AFACENet. The paper is submmit to IEEE Transections on In
 [1] [CenterNet](https://github.com/xingyizhou/CenterNet)
 
 [2] [SFA3D](https://github.com/maudzung/SFA3D)
+
+[3] [MobileViT](https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/mobilevit.py)
+
+[4] [MobileFormer](https://github.com/kevinz8866/MobileFormer)
+
+[5] [Vision Transformer with Deformable Attention](https://github.com/LeapLabTHU/DAT/tree/main)
