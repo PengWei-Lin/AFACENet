@@ -8,8 +8,9 @@ The respository is for AFACENet. The paper is submmit to IEEE Transections on In
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/377268711_2331490857034091_4453226347110264732_n.png)
 
 ## Model link
-
+[Our model](https://drive.google.com/file/d/1zUgyva-F8SX_YwBInAypGsnGioDbmLKS/view?usp=sharing)
 
 ## References
 [1] [CenterNet](https://github.com/xingyizhou/CenterNet)
+
 [2] [SFA3D](https://github.com/maudzung/SFA3D)
