@@ -10,6 +10,18 @@ The respository is for AFACENet. The paper is submmit to IEEE Transections on In
 ## Model link
 [Our model](https://drive.google.com/file/d/1zUgyva-F8SX_YwBInAypGsnGioDbmLKS/view?usp=sharing)
 
+## Model training
+./ddd_3dop.sh
+note: you can change the configuration in ddd_3dop.sh
+
+## Model demostration
+./Monocular_3D_Detection_demo.sh
+note: you can change the configuration in Monocular_3D_Detection_demo.sh
+
+## Model evaluation
+./test
+note: you can change the configuration in test.sh
+
 ## References
 [1] [CenterNet](https://github.com/xingyizhou/CenterNet)
 
