@@ -32,3 +32,9 @@ note: you can change the configuration in test.sh
 [4] [MobileFormer](https://github.com/kevinz8866/MobileFormer)
 
 [5] [Vision Transformer with Deformable Attention](https://github.com/LeapLabTHU/DAT/tree/main)
+
+[6] [VovNetv2](https://github.com/youngwanLEE/vovnet-detectron2)
+
+[7] [ECANet](https://github.com/BangguWu/ECANet/blob/master/models/eca_module.py?fbclid=IwAR305bvvHYF-q6SupbMvTtMkm0rAqMBjMCeIhC-HB6lFEPw5saEhqoIz3ZU)
+
+[8] [Dynamic Convolution](https://github.com/kaijieshi7/Dynamic-convolution-Pytorch)
