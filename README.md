@@ -38,3 +38,7 @@ note: you can change the configuration in test.sh
 [7] [ECANet](https://github.com/BangguWu/ECANet/blob/master/models/eca_module.py?fbclid=IwAR305bvvHYF-q6SupbMvTtMkm0rAqMBjMCeIhC-HB6lFEPw5saEhqoIz3ZU)
 
 [8] [Dynamic Convolution](https://github.com/kaijieshi7/Dynamic-convolution-Pytorch)
+
+[9] [MobileNetv3](https://github.com/YaphetS-X/CenterNet-MobileNetV3)
+
+[10] [CSPNet](https://zhuanlan.zhihu.com/p/263555330)
