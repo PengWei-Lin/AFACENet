@@ -12,14 +12,29 @@ The respository is for AFACENet. The paper is submmit to IEEE Transections on In
 
 ## Model training
 ./ddd_3dop.sh
+
+or
+
+python3 main.py --task ddd --exp_id 3dop_dlap_head_test --arch dlapheadtest_34 --head_conv 256 --dataset kitti --kitti_split 3dop --batch_size 20 --num_epochs 100 --lr_step 45,60,70,80,90 --gpus 0 --num_workers 20
+
 note: you can change the configuration in ddd_3dop.sh
 
 ## Model demostration
 ./Monocular_3D_Detection_demo.sh
+
+or
+
+python3 ./src/demo.py --task ddd --arch dlapreason_34 --load_model ./exp/ddd/3dop_dlap_reasonable_nc/model_last.pth --demo ./videos/24_2022-05-11.mp4 --dataset kitti --input_h 480 --input_w 640
+
 note: you can change the configuration in Monocular_3D_Detection_demo.sh
 
 ## Model evaluation
 ./test
+
+or
+
+python3 test.py --task ddd --exp_id 3dop_dlap_reasonable_nc --arch dlapreason_34 --dataset kitti --kitti_split 3dop --debug 4 --load_model ../exp/ddd/3dop_dlap_reasonable_nc/model_last.pth
+
 note: you can change the configuration in test.sh
 
 ## References
@@ -42,3 +57,5 @@ note: you can change the configuration in test.sh
 [9] [MobileNetv3](https://github.com/YaphetS-X/CenterNet-MobileNetV3)
 
 [10] [CSPNet](https://zhuanlan.zhihu.com/p/263555330)
+
+[11] [HRNet](https://github.com/HRNet/HRNet-Semantic-Segmentation/tree/HRNet-OCR)
