@@ -4,5 +4,12 @@ The respository is for AFACENet. The paper is submmit to IEEE Transections on In
 ## Overall architecture
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/377734717_3568350886770723_955616644508864195_n.png)
 
-## Detection ressult
+## Detection result
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/377268711_2331490857034091_4453226347110264732_n.png)
+
+## Model link
+
+
+## References
+[1] [CenterNet](https://github.com/xingyizhou/CenterNet)
+[2] [SFA3D](https://github.com/maudzung/SFA3D)
