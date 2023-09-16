@@ -1,5 +1,5 @@
 ## Adaptive Feature Aggregation Centric Enhance Network for Accurate and Fast Monocular 3D Object Detection
-The respository is for AFACENet. The paper is submmit to IEEE Transections on Instrument and Meansurement. The paper is under review. The repository is still in progress.
+The respository is for AFACENet. The paper is submmit to IEEE Transactions on Instrumentation and Measurement. The paper is under review.
 
 ## Overall architecture
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/377734717_3568350886770723_955616644508864195_n.png)
@@ -17,7 +17,7 @@ or
 
 python3 main.py --task ddd --exp_id 3dop_dlap_head_test --arch dlapheadtest_34 --head_conv 256 --dataset kitti --kitti_split 3dop --batch_size 20 --num_epochs 100 --lr_step 45,60,70,80,90 --gpus 0 --num_workers 20
 
-note: you can change the configuration in ddd_3dop.sh
+note: You can change the configuration in ddd_3dop.sh or the command
 
 ## Model demostration
 ./Monocular_3D_Detection_demo.sh
@@ -26,7 +26,7 @@ or
 
 python3 ./src/demo.py --task ddd --arch dlapreason_34 --load_model ./exp/ddd/3dop_dlap_reasonable_nc/model_last.pth --dataset kitti --demo single_image_image_folder_or_video
 
-note: you can change the configuration in Monocular_3D_Detection_demo.sh
+note: You can change the configuration in Monocular_3D_Detection_demo.sh or the command
 
 ## Model evaluation
 ./test
@@ -35,7 +35,7 @@ or
 
 python3 test.py --task ddd --exp_id 3dop_dlap_reasonable_nc --arch dlapreason_34 --dataset kitti --kitti_split 3dop --debug 4 --load_model ../exp/ddd/3dop_dlap_reasonable_nc/model_last.pth
 
-note: you can change the configuration in test.sh
+note: You can change the configuration in test.sh or the command
 
 ## References
 [1] [CenterNet](https://github.com/xingyizhou/CenterNet)
