@@ -2,10 +2,10 @@
 The respository is for AFACENet. The paper is submmit to IEEE Transactions on Instrumentation and Measurement. The paper is under review.
 
 ## Overall architecture
-![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/cosS32_K.jpeg)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/ZHAlKj9x.jpeg)
 
 ## Detection result
-![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/S-nlcFMd.jpeg)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/cosS32_K.jpeg)
 
 ## Model link
 [Our model](https://drive.google.com/file/d/1pE3A22MJeqjE_L8YuwoBWUqXRJ6hb9Qg/view?usp=sharing)
