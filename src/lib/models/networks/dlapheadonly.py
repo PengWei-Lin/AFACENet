@@ -352,7 +352,7 @@ class DLA(nn.Module):
         # self.fc = fc
 
 
-def dla34(pretrained=True, **kwargs):  # DLA-34
+def dlapheadonly(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
@@ -516,10 +516,9 @@ class DLASeg(nn.Module):
                         nn.Conv2d(head_conv, classes, 
                           kernel_size=final_kernel, stride=1, 
                           padding=final_kernel // 2, bias=True),
-                        #CSAModuleV2(in_size=classes),
+                        CSAModuleV2(in_size=classes),
                         )
-                    #fc[-2].bias.data.fill_(-2.19)
-                    fc[-1].bias.data.fill_(-2.19)
+                    fc[-2].bias.data.fill_(-2.19)
                 else:
                     fc = nn.Sequential(
                         nn.Conv2d(channels[self.first_level], head_conv,
@@ -565,7 +564,7 @@ class DLASeg(nn.Module):
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-  model = DLASeg('dla{}'.format(num_layers), heads,
+  model = DLASeg('dlapheadonly{}'.format(num_layers), heads,
                  pretrained=True,
                  down_ratio=down_ratio,
                  final_kernel=1,

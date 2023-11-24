@@ -69,6 +69,9 @@ class DddDataset(data.Dataset):
       (num_classes, self.opt.output_h, self.opt.output_w), dtype=np.float32)
     wh = np.zeros((self.max_objs, 2), dtype=np.float32)
     reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+    # Add amodel center
+    act = np.zeros((self.max_objs, 2), dtype=np.float32)
+    # Add amodel center
     dep = np.zeros((self.max_objs, 1), dtype=np.float32)
     rotbin = np.zeros((self.max_objs, 2), dtype=np.int64)
     rotres = np.zeros((self.max_objs, 2), dtype=np.float32)
@@ -76,42 +79,144 @@ class DddDataset(data.Dataset):
     ind = np.zeros((self.max_objs), dtype=np.int64)
     reg_mask = np.zeros((self.max_objs), dtype=np.uint8)
     rot_mask = np.zeros((self.max_objs), dtype=np.uint8)
+    # Add amodel center
+    act_mask = np.zeros((self.max_objs), dtype=np.uint8)
+    # Add amodel center
 
     ann_ids = self.coco.getAnnIds(imgIds=[img_id])
     anns = self.coco.loadAnns(ids=ann_ids)
     num_objs = min(len(anns), self.max_objs)
     draw_gaussian = draw_msra_gaussian if self.opt.mse_loss else \
                     draw_umich_gaussian
+                    
+    P2 = np.array(img_info['calib'], dtype=np.float32)
+    R0 = np.array(img_info['R0'], dtype=np.float32)
+    Tr = np.array(img_info['Tr'], dtype=np.float32)
+    
+    new_r = [0, 0, 0, 0]
+    P2_n = np.vstack((P2, new_r))
+    
+    new_c = [0, 0, 0]
+    new_nr = [0, 0, 0, 1]
+    R0_n = np.column_stack((R0, new_c))
+    R0_n = np.vstack((R0_n, new_nr))
+    
+    Tr_n = np.vstack((Tr, new_nr))
+    
+    
+    R0_inv = np.linalg.inv(R0_n)
+    Tr_inv = np.linalg.inv(Tr_n)
+    
+    #print("P2:\n{}".format(P2))
+    #print("P2_n:\n{}".format(P2_n))
+    #print("R0:\n{}".format(R0))
+    #print("R0_n:\n{}".format(R0_n))
+    #print("Tr:\n{}".format(Tr))
+    #print("Tr_n:\n{}".format(Tr_n))
+    
+    
+    
     gt_det = []
     for k in range(num_objs):
       ann = anns[k]
       bbox = self._coco_box_to_bbox(ann['bbox'])
       cls_id = int(self.cat_ids[ann['category_id']])
+      
+      #p = ann['location']
+      
+      
+      # System 1
+      '''
+      x,y,z = ann['location']
+      
+      h,w,l = ann['dim']
+      
+      pts_3d = [x, y-(h/2), z, 1]
+      pts_3d = np.matmul(R0_n, pts_3d)
+      pts_2d = np.dot(P2_n, pts_3d)
+      pts_2d = pts_2d[:2] / pts_2d[2:3]
+      #print(pts_2d)
+      x, y = pts_2d
+      
+      nc_xy = [x, y]
+      nc_xy = affine_transform(nc_xy, trans_output)
+      '''
+      
+      
+      # System 2
+      '''
+      xn, yn, zn = ann['location']
+      hn, wn, ln = ann['dim']
+      pts_3dn = [xn, yn-(hn/2), zn, 1]
+      pts_3dn = np.matmul(R0_inv, pts_3dn)
+      pts_3dn = np.matmul(Tr_inv, pts_3dn)
+      pts_3dn = np.matmul(Tr, pts_3dn)
+      xnn, ynn, znn = pts_3dn
+      pts_3dn = [xnn, ynn, znn, 1]
+      pts_3dn = np.matmul(R0_n, pts_3dn)
+      pts_2dn = np.dot(P2_n, pts_3dn)
+      pts_2dn = pts_2dn[:2] / pts_2dn[2:3]
+      
+      x2n, y2n= pts_2dn
+      
+      nnc_xy = [x2n, y2n]
+      nnc_xy = affine_transform(nnc_xy, trans_output)
+      '''
+      lc = ann['amodel_center']
+      lc = affine_transform(lc, trans_output)
+      
+      
+      
+      # show
+      #cv2.circle(img, (int(x),int(y)), radius=0, color=(255, 0, 0), thickness=30)
+      #cv2.circle(img, (int(x2n),int(y2n)), radius=0, color=(0, 0, 255), thickness=30)
+      
+      
       if cls_id <= -99:
         continue
       # if flipped:
       #   bbox[[0, 2]] = width - bbox[[2, 0]] - 1
+      
+      #print("xxy before affine {}".format(nnc_xy))
+      #print("xy before affine {}".format(nc_xy))
+      #nc_xy = affine_transform(nc_xy, trans_output)
+      #print("xy affine {}".format(nc_xy))
+      
+      
+      #print("trans_out: {}\n".format(trans_output))
+      
+      
+      #cv2.circle(img, (int(bbox[0:1]),int(bbox[1:2])), radius=0, color=(128, 128, 128), thickness=30)
+      #print(":2 before affine {}".format(bbox[:2]))
       bbox[:2] = affine_transform(bbox[:2], trans_output)
+      #print(":2 affine {}".format(bbox[:2]))
+      #print("2: before affine {}".format(bbox[2:]))
       bbox[2:] = affine_transform(bbox[2:], trans_output)
+      #print("2: affine {}".format(bbox[2:]))
+      #print(bbox[[0, 2]])
       bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, self.opt.output_w - 1)
+      #print(bbox[[0, 2]])
       bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, self.opt.output_h - 1)
       h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+      
+      
+      #h, w = n_box[3] - n_box[1], n_box[2] - n_box[0]
       if h > 0 and w > 0:
         radius = gaussian_radius((h, w))
         radius = max(0, int(radius))
-        ct = np.array(
-          [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
+        ct = np.array([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
         ct_int = ct.astype(np.int32)
+        #cv2.circle(img, (ct_int[0]*4, ct_int[1]*4), radius=0, color=(0, 255, 0), thickness=30)
         if cls_id < 0:
           ignore_id = [_ for _ in range(num_classes)] \
                       if cls_id == - 1 else  [- cls_id - 2]
           if self.opt.rect_mask:
-            hm[ignore_id, int(bbox[1]): int(bbox[3]) + 1, 
-              int(bbox[0]): int(bbox[2]) + 1] = 0.9999
+            hm[ignore_id, int(bbox[1]): int(bbox[3]) + 1, int(bbox[0]): int(bbox[2]) + 1] = 0.9999
           else:
             for cc in ignore_id:
               draw_gaussian(hm[cc], ct, radius)
               #print("Flag!!!!!!!!!!!!")
+            #print(ct_int)
             hm[ignore_id, ct_int[1], ct_int[0]] = 0.9999
           continue
         draw_gaussian(hm[cls_id], ct, radius)
@@ -137,14 +242,34 @@ class DddDataset(data.Dataset):
           dim[k] = ann['dim']
           # print('        cat dim', cls_id, dim[k])
           ind[k] = ct_int[1] * self.opt.output_w + ct_int[0]
+          
           reg[k] = ct - ct_int
+          #act[k] = nc_xy - ct_int
+          #act[k] = nnc_xy - ct_int
+          act[k] = lc - ct_int
+          
+          #print("2D offset{}".format(reg[k]))
+          #print("3D offset{}".format(act[k]))
+          #print("WH{}".format(wh[k]))
+          
+          
           reg_mask[k] = 1 if not aug else 0
           rot_mask[k] = 1
+          # Add amodel center
+          act_mask[k] = 1
+          # Add amodel center
+          
     # print('gt_det', gt_det)
     # print('')
+    
+    #cv2.imshow('test', img)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+    
     ret = {'input': inp, 'hm': hm, 'dep': dep, 'dim': dim, 'ind': ind, 
            'rotbin': rotbin, 'rotres': rotres, 'reg_mask': reg_mask,
-           'rot_mask': rot_mask}
+           'rot_mask': rot_mask,
+           'act': act}  ############### Add amodel center
     if self.opt.reg_bbox:
       ret.update({'wh': wh})
     if self.opt.reg_offset:

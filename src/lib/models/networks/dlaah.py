@@ -40,6 +40,91 @@ def conv3x3(in_planes, out_planes, stride=1):
                      padding=1, bias=False)
 
 
+class CSAModuleV2(nn.Module):
+    def __init__(self, in_size):
+        super(CSAModuleV2, self).__init__()
+        self.ch_at = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_size, in_size, kernel_size=1,
+                      stride=1, padding=0, bias=True),
+            #nn.ReLU(inplace=True),
+            nn.Sigmoid(),
+        )
+
+        self.sp_at = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1,
+                      padding=0, bias=True, groups=1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        chat = self.ch_at(x)
+        spat = self.sp_at(x)
+
+        ch_out = x * chat
+        sp_out = x * spat
+
+        return ch_out + sp_out
+
+
+class Conv_BN_Relu(nn.Module):
+    def __init__(self, in_size):
+        super(Conv_BN_Relu, self).__init__()
+        self.cbr = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=3, stride=1, padding=1, bias=True, groups=1),
+            nn.BatchNorm2d(in_size, momentum=BN_MOMENTUM),
+            nn.ReLU(inplace=True),
+        )
+        
+    def forward(self, x):
+        x = self.cbr(x)
+        return x
+
+
+class Conv_BN_Relu_S(nn.Module):
+    def __init__(self, in_size):
+        super(Conv_BN_Relu_S, self).__init__()
+        self.cbrs = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=3, stride=1, padding=1, bias=True, groups=1),
+            nn.BatchNorm2d(in_size, momentum=BN_MOMENTUM),
+            nn.ReLU(inplace=True),
+            nn.Sigmoid(),
+        )
+        
+    def forward(self, x):
+        x = self.cbrs(x)
+        return x
+    
+
+class Conv_BN_S(nn.Module):
+    def __init__(self, in_size):
+        super(Conv_BN_S, self).__init__()
+        self.cbrs = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=3, stride=1, padding=1, bias=True, groups=1),
+            nn.BatchNorm2d(in_size, momentum=BN_MOMENTUM),
+            nn.Sigmoid(),
+        )
+        
+    def forward(self, x):
+        x = self.cbrs(x)
+        return x
+
+
+class Conv_BN_PRelu(nn.Module):
+    def __init__(self, in_size):
+        super(Conv_BN_PRelu, self).__init__()
+        self.cbpr = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=3, stride=1, padding=1, bias=True, groups=1),
+            nn.BatchNorm2d(in_size, momentum=BN_MOMENTUM),
+            nn.PReLU(num_parameters=in_size),
+        )
+        
+    def forward(self, x):
+        x = self.cbpr(x)
+        return x
+
+
+
 class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, dilation=1):
         super(BasicBlock, self).__init__()
@@ -47,7 +132,7 @@ class BasicBlock(nn.Module):
                                stride=stride, padding=dilation,
                                bias=False, dilation=dilation)
         self.bn1 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
+        #self.relu = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
                                stride=1, padding=dilation,
                                bias=False, dilation=dilation)
@@ -60,13 +145,13 @@ class BasicBlock(nn.Module):
 
         out = self.conv1(x)
         out = self.bn1(out)
-        out = self.relu(out)
+        #out = self.relu(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
 
         out += residual
-        out = self.relu(out)
+        #out = self.relu(out)
 
         return out
     
@@ -87,7 +172,7 @@ class Bottleneck(nn.Module):
         self.conv3 = nn.Conv2d(bottle_planes, planes,
                                kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
+        #self.relu = nn.ReLU(inplace=True)
         self.stride = stride
 
     def forward(self, x, residual=None):
@@ -131,7 +216,7 @@ class BottleneckX(nn.Module):
         self.conv3 = nn.Conv2d(bottle_planes, planes,
                                kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
+        #self.relu = nn.ReLU(inplace=True)
         self.stride = stride
 
     def forward(self, x, residual=None):
@@ -162,7 +247,7 @@ class Root(nn.Module):
             in_channels, out_channels, 1,
             stride=1, bias=False, padding=(kernel_size - 1) // 2)
         self.bn = nn.BatchNorm2d(out_channels, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
+        #self.relu = nn.ReLU(inplace=True)
         self.residual = residual
 
     def forward(self, *x):
@@ -171,7 +256,7 @@ class Root(nn.Module):
         x = self.bn(x)
         if self.residual:
             x += children[0]
-        x = self.relu(x)
+        #x = self.relu(x)
 
         return x
 
@@ -243,7 +328,8 @@ class DLA(nn.Module):
             nn.Conv2d(3, channels[0], kernel_size=7, stride=1,
                       padding=3, bias=False),
             nn.BatchNorm2d(channels[0], momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=True))
+            #nn.ReLU(inplace=True),
+            )
         self.level0 = self._make_conv_level(
             channels[0], channels[0], levels[0])
         self.level1 = self._make_conv_level(
@@ -291,7 +377,8 @@ class DLA(nn.Module):
                           stride=stride if i == 0 else 1,
                           padding=dilation, bias=False, dilation=dilation),
                 nn.BatchNorm2d(planes, momentum=BN_MOMENTUM),
-                nn.ReLU(inplace=True)])
+                #nn.ReLU(inplace=True)
+                ])
             inplanes = planes
         return nn.Sequential(*modules)
 
@@ -318,13 +405,10 @@ class DLA(nn.Module):
         # self.fc = fc
 
 
-def dlapnoncarafefull34(pretrained=True, **kwargs):  # DLA-34
+def dlaah34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
-    # block=BBlock, **kwargs)
-    # block=BottleneckX, **kwargs)
-    # block=Bottleneck, **kwargs)
     if pretrained:
         model.load_pretrained_model(
             data='imagenet', name='dla34', hash='ba72cf86')
@@ -364,7 +448,7 @@ class DeformConv(nn.Module):
         super(DeformConv, self).__init__()
         self.actf = nn.Sequential(
             nn.BatchNorm2d(cho, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=True)
+            #nn.ReLU(inplace=True)
         )
         #self.conv = DCN(chi, cho, kernel_size=(3, 3), stride=1, padding=1, dilation=1, deformable_groups=1)
         self.conv = DCN(chi, cho, kernel_size=3, stride=1, padding=1, dilation=1, deform_groups=1)
@@ -391,16 +475,17 @@ class DLASeg(nn.Module):
         
         
         self.conv_up_level1 = DeformConv(512, 256)
-        self.carafe1 = CARAFEPack(channels = 256, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe1 = CARAFEPack(channels = 256, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.conv_cat1 = DeformConv(512, 256)
         
         self.conv_up_level2 = DeformConv(256, 128)
-        self.carafe2 = CARAFEPack(channels = 128, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe2 = CARAFEPack(channels = 128, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.conv_cat2 = DeformConv(256, 128)
         
         self.conv_up_level3 = DeformConv(128, 64)
-        self.carafe3 = CARAFEPack(channels = 64, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe3 = CARAFEPack(channels = 64, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.conv_cat3 = DeformConv(128, 64)
+        
         
         
         self.carafe_hm1_3 = CARAFEPack(channels = 3, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
@@ -421,19 +506,23 @@ class DLASeg(nn.Module):
         self.carafe_wh1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.carafe_wh2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
-        '''
-        self.carafe_up1_3 = CARAFEPack(channels = 3, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_3 = CARAFEPack(channels = 3, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
-        self.carafe_up1_1 = CARAFEPack(channels = 1, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_1 = CARAFEPack(channels = 1, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        # Add amodel center
+        self.carafe_act1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        self.carafe_act2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        # Add amodel center
         
-        self.carafe_up1_8 = CARAFEPack(channels = 8, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_8 = CARAFEPack(channels = 8, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
-        self.carafe_up1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        '''
+        self.attention_head = CSAModuleV2(in_size=3)
+        #self.attention_head = Conv_BN_S(in_size=3)
+        self.wh_head = Conv_BN_Relu(in_size=2)
+        self.dim_head = Conv_BN_Relu(in_size=3)
+        self.dep_head = Conv_BN_Relu(in_size=1)
+        self.reg_head = Conv_BN_S(in_size=2)
+        self.act_head = Conv_BN_PRelu(in_size=2)
+        
+        self.rot_head = Conv_BN_PRelu(in_size=8)
+        
         
         self.heads = heads
         fpn_channels = [256, 128, 64]
@@ -444,16 +533,23 @@ class DLASeg(nn.Module):
                     if 'hm' in head:
                         fc = nn.Sequential(
                             nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
-                            nn.ReLU(inplace=True),
+                            #nn.ReLU(inplace=True),
                             nn.Conv2d(head_conv, classes,
                                       kernel_size=final_kernel, stride=1,
                                       padding=final_kernel // 2, bias=True),
                         )
                         fc[-1].bias.data.fill_(-2.19)
-                    else:
+                    elif 'dep' or 'dim' or 'wh':
                         fc = nn.Sequential(
                             nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
                             nn.ReLU(inplace=True),
+                            nn.Conv2d(head_conv, classes,
+                                      kernel_size=final_kernel, stride=1,
+                                      padding=final_kernel // 2, bias=True))
+                        fill_fc_weights(fc)
+                    else:
+                        fc = nn.Sequential(
+                            nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
                             nn.Conv2d(head_conv, classes,
                                       kernel_size=final_kernel, stride=1,
                                       padding=final_kernel // 2, bias=True))
@@ -472,64 +568,58 @@ class DLASeg(nn.Module):
 
     def forward(self, x):
         _, _, input_h, input_w = x.size()
-        hm_h, hm_w = input_h // 4, input_w // 4
+        _, hm_w = input_h // 4, input_w // 4
         x = self.base(x)
 
         # New
         # up_level1: torch.Size([b, 512, 14, 14])
-        #up_level1 = F.interpolate(self.conv_up_level1(x[5]), scale_factor=2, mode='bilinear', align_corners=True)
-        up_level1 = self.carafe1(self.conv_up_level1(x[5]))
+        up_level1 = F.interpolate(self.conv_up_level1(x[5]), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level1 = self.carafe1(self.conv_up_level1(x[5]))
+        #print("Level1:{}".format(up_level1.shape))
 
         concat_level1 = self.conv_cat1(torch.cat((up_level1, x[4]), dim=1))
         # up_level2: torch.Size([b, 256, 28, 28])
-        #up_level2 = F.interpolate(self.conv_up_level2(concat_level1), scale_factor=2, mode='bilinear', align_corners=True)
-        up_level2 = self.carafe2(self.conv_up_level2(concat_level1))
-        # print("Level2:{}".format(up_level2.shape))
+        up_level2 = F.interpolate(self.conv_up_level2(concat_level1), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level2 = self.carafe2(self.conv_up_level2(concat_level1))
+        #print("Level2:{}".format(up_level2.shape))
 
         concat_level2 = self.conv_cat2(torch.cat((up_level2, x[3]), dim=1))
         # up_level3: torch.Size([b, 128, 56, 56]),
-        #up_level3 = F.interpolate(self.conv_up_level3(concat_level2), scale_factor=2, mode='bilinear', align_corners=True)
-        up_level3 = self.carafe3(self.conv_up_level3(concat_level2))
-        # print("Level3:{}".format(up_level3.shape))
+        up_level3 = F.interpolate(self.conv_up_level3(concat_level2), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level3 = self.carafe3(self.conv_up_level3(concat_level2))
+        #print("Level3:{}".format(up_level3.shape))
         # up_level4: torch.Size([b, 64, 56, 56])
         concat_level3 = self.conv_cat3(torch.cat((up_level3, x[2]), dim=1))
-        # print("Level4:{}".format(up_level4.shape))
+        #print("Level4:{}".format(concat_level3.shape))
         
         
         ret = {}
+        #head_count = 0
         for head in self.heads:
+            #head_count += 1
+            #print(head_count)
             temp_outs = []
             # original     up_level2, up_level3, up_level4
             for fpn_idx, fdn_input in enumerate([concat_level1, concat_level2, concat_level3]):
                 fpn_out = self.__getattr__(
                     'fpn{}_{}'.format(fpn_idx, head))(fdn_input)
-                #_, _, fpn_out_h, fpn_out_w = fpn_out.size()
-                _, fpn_out_c, fpn_out_h, fpn_out_w = fpn_out.size()
+                _, _, fpn_out_h, fpn_out_w = fpn_out.size()
+                #_, fpn_out_c, fpn_out_h, fpn_out_w = fpn_out.size()
                 # Make sure the added features having same size of heatmap output
                 #if (fpn_out_w != hm_w) or (fpn_out_h != hm_h):
                     #fpn_out = F.interpolate(fpn_out, size=(hm_h, hm_w))
-                '''
-                if hm_w // fpn_out_w == 4 and fpn_out_c == 3:
-                    fpn_out = self.carafe_up1_3(fpn_out)
-                elif hm_w // fpn_out_w == 2 and fpn_out_c == 3:
-                    fpn_out =self.carafe_up2_3(fpn_out)
-                elif hm_w // fpn_out_w == 4 and fpn_out_c == 1:
-                    fpn_out = self.carafe_up1_1(fpn_out)
-                elif hm_w // fpn_out_w == 2 and fpn_out_c == 1:
-                    fpn_out = self.carafe_up2_1(fpn_out)
-                elif hm_w // fpn_out_w == 4 and fpn_out_c == 8:
-                    fpn_out = self.carafe_up1_8(fpn_out)
-                elif hm_w // fpn_out_w == 2 and fpn_out_c == 8:
-                    fpn_out = self.carafe_up2_8(fpn_out)
-                elif hm_w // fpn_out_w == 4 and fpn_out_c == 2:
-                    fpn_out = self.carafe_up1_2(fpn_out)
-                elif hm_w // fpn_out_w ==2 and fpn_out_c == 2:
-                    fpn_out = self.carafe_up2_2(fpn_out)
-                '''
+                
+                
                 if hm_w // fpn_out_w == 4 and head == 'hm':
                     fpn_out = self.carafe_hm1_3(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'hm':
                     fpn_out =self.carafe_hm2_3(fpn_out)
+                # Add amodel center
+                elif hm_w // fpn_out_w == 4 and head == 'act':
+                    fpn_out = self.carafe_act1_2(fpn_out)
+                elif hm_w // fpn_out_w == 2 and head == 'act':
+                    fpn_out = self.carafe_act2_2(fpn_out)
+                # Add amodel center
                 elif hm_w // fpn_out_w == 4 and head == 'dep':
                     fpn_out = self.carafe_dep1_1(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'dep':
@@ -537,23 +627,47 @@ class DLASeg(nn.Module):
                 elif hm_w // fpn_out_w == 4 and head == 'rot':
                     fpn_out = self.carafe_rot1_8(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'rot':
-                    fpn_out =self.carafe_rot2_8(fpn_out)
+                    fpn_out = self.carafe_rot2_8(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'dim':
                     fpn_out = self.carafe_dim1_3(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'dim':
-                    fpn_out =self.carafe_dim2_3(fpn_out)
+                    fpn_out = self.carafe_dim2_3(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'wh':
                     fpn_out = self.carafe_wh1_2(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'wh':
-                    fpn_out =self.carafe_wh2_2(fpn_out)
+                    fpn_out = self.carafe_wh2_2(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'reg':
                     fpn_out = self.carafe_reg1_2(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'reg':
-                    fpn_out =self.carafe_reg2_2(fpn_out)
+                    fpn_out = self.carafe_reg2_2(fpn_out)
+                
+                #print("FPN out:{}".format(fpn_out.shape))
                 temp_outs.append(fpn_out)
             # Take the softmax in the keypoint feature pyramid network
+            #print("temp:{}".format(temp_outs))
             final_out = self.apply_kfpn(temp_outs)
-
+            
+            if head == 'hm':
+                final_out = self.attention_head(final_out)
+                
+            elif head == 'act':
+                final_out = self.act_head(final_out)
+                
+            elif head == 'dep':
+                final_out = self.dep_head(final_out)
+                
+            elif head == 'rot':
+                final_out = self.rot_head(final_out)
+                
+            elif head == 'dim':
+                final_out = self.dim_head(final_out)
+                
+            elif head == 'wh':
+                final_out = self.wh_head(final_out)
+                
+            elif head == 'reg':
+                final_out = self.reg_head(final_out)
+                
             ret[head] = final_out
 
         return [ret]
@@ -568,7 +682,7 @@ class DLASeg(nn.Module):
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-    model = DLASeg('dlapnoncarafefull{}'.format(num_layers), heads,
+    model = DLASeg('dlaah{}'.format(num_layers), heads,
                    pretrained=True,
                    down_ratio=down_ratio,
                    final_kernel=1,

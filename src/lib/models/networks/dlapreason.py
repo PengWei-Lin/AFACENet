@@ -439,7 +439,7 @@ class DLA(nn.Module):
         # self.fc = fc
 
 
-def dlapreason34(pretrained=False, **kwargs):  # DLA-34
+def dlapreason34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
@@ -544,6 +544,22 @@ class DLASeg(nn.Module):
         self.carafe_wh2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
         
+        # Add amodel center
+        self.carafe_act1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        self.carafe_act2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        # Add amodel center
+        
+        
+        #self.carafe_hp_offset1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe_hp_offset2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        
+        #self.carafe_kps1_18 = CARAFEPack(channels = 18, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe_kps2_18 = CARAFEPack(channels = 18, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        
+        #self.carafe_hm_hp1_9 = CARAFEPack(channels = 9, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe_hm_hp2_9 = CARAFEPack(channels = 9, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        
+        
         '''
         self.ct_hm1_3 = nn.ConvTranspose2d(3, 3, 4*2, stride=4, padding=4 // 2, output_padding=0, groups=3, bias=False)
         self.ct_hm2_3 = nn.ConvTranspose2d(3, 3, 2*2, stride=2, padding=2 // 2, output_padding=0, groups=3, bias=False)
@@ -641,25 +657,29 @@ class DLASeg(nn.Module):
         # up_level1: torch.Size([b, 512, 14, 14])
         up_level1 = F.interpolate(self.conv_up_level1(x[5]), scale_factor=2, mode='bilinear', align_corners=True)
         #up_level1 = self.carafe1(self.conv_up_level1(x[5]))
+        #print("Level1:{}".format(up_level1.shape))
 
         concat_level1 = self.conv_cat1(torch.cat((up_level1, x[4]), dim=1))
         # up_level2: torch.Size([b, 256, 28, 28])
         up_level2 = F.interpolate(self.conv_up_level2(concat_level1), scale_factor=2, mode='bilinear', align_corners=True)
         #up_level2 = self.carafe2(self.conv_up_level2(concat_level1))
-        # print("Level2:{}".format(up_level2.shape))
+        #print("Level2:{}".format(up_level2.shape))
 
         concat_level2 = self.conv_cat2(torch.cat((up_level2, x[3]), dim=1))
         # up_level3: torch.Size([b, 128, 56, 56]),
         up_level3 = F.interpolate(self.conv_up_level3(concat_level2), scale_factor=2, mode='bilinear', align_corners=True)
         #up_level3 = self.carafe3(self.conv_up_level3(concat_level2))
-        # print("Level3:{}".format(up_level3.shape))
+        #print("Level3:{}".format(up_level3.shape))
         # up_level4: torch.Size([b, 64, 56, 56])
         concat_level3 = self.conv_cat3(torch.cat((up_level3, x[2]), dim=1))
-        # print("Level4:{}".format(up_level4.shape))
+        #print("Level4:{}".format(concat_level3.shape))
         
         
         ret = {}
+        #head_count = 0
         for head in self.heads:
+            #head_count += 1
+            #print(head_count)
             temp_outs = []
             # original     up_level2, up_level3, up_level4
             for fpn_idx, fdn_input in enumerate([concat_level1, concat_level2, concat_level3]):
@@ -676,26 +696,48 @@ class DLASeg(nn.Module):
                     fpn_out = self.carafe_hm1_3(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'hm':
                     fpn_out =self.carafe_hm2_3(fpn_out)
+                # Add amodel center
+                elif hm_w // fpn_out_w == 4 and head == 'act':
+                    fpn_out = self.carafe_act1_2(fpn_out)
+                elif hm_w // fpn_out_w == 2 and head == 'act':
+                    fpn_out = self.carafe_act2_2(fpn_out)
+                # Add amodel center
                 elif hm_w // fpn_out_w == 4 and head == 'dep':
                     fpn_out = self.carafe_dep1_1(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'dep':
                     fpn_out =self.carafe_dep2_1(fpn_out)
+                #elif hm_w // fpn_out_w == 4 and head == 'kps':
+                    #fpn_out = self.carafe_kps1_18(fpn_out)
+                #elif hm_w // fpn_out_w == 2 and head == 'kps':
+                    #fpn_out = self.carafe_kps2_18(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'rot':
                     fpn_out = self.carafe_rot1_8(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'rot':
-                    fpn_out =self.carafe_rot2_8(fpn_out)
+                    fpn_out = self.carafe_rot2_8(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'dim':
                     fpn_out = self.carafe_dim1_3(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'dim':
-                    fpn_out =self.carafe_dim2_3(fpn_out)
+                    fpn_out = self.carafe_dim2_3(fpn_out)
+                #elif hm_w // fpn_out_w == 4 and head == 'prob':
+                    #fpn_out = self.carafe_dep1_1(fpn_out)
+                #elif hm_w // fpn_out_w == 2 and head == 'prob':
+                    #fpn_out = self.carafe_dep2_1(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'wh':
                     fpn_out = self.carafe_wh1_2(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'wh':
-                    fpn_out =self.carafe_wh2_2(fpn_out)
+                    fpn_out = self.carafe_wh2_2(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'reg':
                     fpn_out = self.carafe_reg1_2(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'reg':
-                    fpn_out =self.carafe_reg2_2(fpn_out)
+                    fpn_out = self.carafe_reg2_2(fpn_out)
+                #elif hm_w // fpn_out_w == 4 and head == 'hm_hp':
+                    #fpn_out = self.carafe_hm_hp1_9(fpn_out)
+                #elif hm_w // fpn_out_w == 2 and head == 'hm_hp':
+                    #fpn_out = self.carafe_hm_hp2_9(fpn_out)
+                #elif hm_w // fpn_out_w == 4 and head == 'hp_offset':
+                    #fpn_out = self.carafe_hp_offset1_2(fpn_out)
+                #elif hm_w // fpn_out_w == 2 and head == 'hp_offset':
+                    #fpn_out = self.carafe_hp_offset2_2(fpn_out)
                 
                 
                 '''
@@ -724,9 +766,10 @@ class DLASeg(nn.Module):
                 elif hm_w // fpn_out_w == 2 and head == 'reg':
                     fpn_out =self.ct_reg2_2(fpn_out)
                 '''
-                
+                #print("FPN out:{}".format(fpn_out.shape))
                 temp_outs.append(fpn_out)
             # Take the softmax in the keypoint feature pyramid network
+            #print("temp:{}".format(temp_outs))
             final_out = self.apply_kfpn(temp_outs)
             
             if head == 'hm':

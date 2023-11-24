@@ -34,28 +34,21 @@ BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
 
 
-class CSAModuleV2(nn.Module):
+class SAModule(nn.Module):
     def __init__(self, in_size):
-        super(CSAModuleV2, self).__init__()
-        self.ch_at = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.ReLU(inplace=True),
-            nn.Sigmoid(),
-        )
+        super(SAModule, self).__init__()
         
         self.sp_at = nn.Sequential(
+            nn.BatchNorm2d(in_size, momentum=BN_MOMENTUM),
             nn.Conv2d(in_size, in_size, kernel_size=1, stride=1, padding=0, bias=True, groups=in_size),
             nn.Sigmoid(),
         )
     def forward(self, x):
-        chat = self.ch_at(x)
         spat = self.sp_at(x)
         
-        ch_out = x * chat
         sp_out = x * spat
         
-        return ch_out + sp_out
+        return sp_out
 
 
 
@@ -352,7 +345,7 @@ class DLA(nn.Module):
         # self.fc = fc
 
 
-def dla34(pretrained=True, **kwargs):  # DLA-34
+def dlaatsbn34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
@@ -516,10 +509,10 @@ class DLASeg(nn.Module):
                         nn.Conv2d(head_conv, classes, 
                           kernel_size=final_kernel, stride=1, 
                           padding=final_kernel // 2, bias=True),
-                        #CSAModuleV2(in_size=classes),
+                        SAModule(in_size=classes),
                         )
-                    #fc[-2].bias.data.fill_(-2.19)
-                    fc[-1].bias.data.fill_(-2.19)
+                    fc[-2].bias.data.fill_(-2.19)
+                    #fc[-1].bias.data.fill_(-2.19)
                 else:
                     fc = nn.Sequential(
                         nn.Conv2d(channels[self.first_level], head_conv,
@@ -565,7 +558,7 @@ class DLASeg(nn.Module):
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-  model = DLASeg('dla{}'.format(num_layers), heads,
+  model = DLASeg('dlaatsbn{}'.format(num_layers), heads,
                  pretrained=True,
                  down_ratio=down_ratio,
                  final_kernel=1,

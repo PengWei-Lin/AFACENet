@@ -22,7 +22,8 @@ class DddLoss(torch.nn.Module):
     self.crit = torch.nn.MSELoss() if opt.mse_loss else FocalLoss()
     self.crit_reg = L1Loss()
     self.crit_rot = BinRotLoss()
-    #self.crit_dep = L1Loss_Balanced()
+    self.crit_dep = L1Loss_Balanced()
+    self.crit_act = L1Loss_Balanced()
     
     self.opt = opt
     #self.optimizer = optimizer
@@ -34,6 +35,7 @@ class DddLoss(torch.nn.Module):
 
     hm_loss, dep_loss, rot_loss, dim_loss = 0, 0, 0, 0
     wh_loss, off_loss = 0, 0
+    act_loss = 0
     for s in range(opt.num_stacks):
       output = outputs[s]
       output['hm'] = _sigmoid(output['hm'])
@@ -46,12 +48,12 @@ class DddLoss(torch.nn.Module):
           opt.output_w, opt.output_h)).to(opt.device)
       
       hm_loss += self.crit(output['hm'], batch['hm']) / opt.num_stacks
-      if opt.dep_weight > 0:
-        dep_loss += self.crit_reg(output['dep'], batch['reg_mask'],
-                                  batch['ind'], batch['dep']) / opt.num_stacks
       #if opt.dep_weight > 0:
-          #dep_loss += self.crit_dep(output['dep'], batch['reg_mask'],
+        #dep_loss += self.crit_reg(output['dep'], batch['reg_mask'],
                                   #batch['ind'], batch['dep']) / opt.num_stacks
+      if opt.dep_weight > 0:
+          dep_loss += self.crit_dep(output['dep'], batch['reg_mask'],
+                                  batch['ind'], batch['dep']) / opt.num_stacks
       if opt.dim_weight > 0:
         dim_loss += self.crit_reg(output['dim'], batch['reg_mask'],
                                   batch['ind'], batch['dim']) / opt.num_stacks
@@ -65,7 +67,14 @@ class DddLoss(torch.nn.Module):
       if opt.reg_offset and opt.off_weight > 0:
         off_loss += self.crit_reg(output['reg'], batch['rot_mask'],
                                   batch['ind'], batch['reg']) / opt.num_stacks
-      
+      # Add amodel center
+      #if opt.amodel_offset and opt.amodel_offset > 0:
+        #act_loss += self.crit_reg(output['act'], batch['rot_mask'],
+                                  #batch['ind'], batch['act']) / opt.num_stacks
+      if opt.amodel_offset and opt.amodel_offset > 0:
+        act_loss += self.crit_act(output['act'], batch['rot_mask'],
+                                  batch['ind'], batch['act']) / opt.num_stacks
+      # Add amodel center
     '''
     losses = [self.crit(output['hm'], batch['hm']),
               self.crit_reg(output['dep'], batch['reg_mask'], batch['ind'], batch['dep']),
@@ -87,11 +96,13 @@ class DddLoss(torch.nn.Module):
     
     loss = opt.hm_weight * hm_loss + opt.dep_weight * dep_loss + \
            opt.dim_weight * dim_loss + opt.rot_weight * rot_loss + \
-           opt.wh_weight * wh_loss + opt.off_weight * off_loss
+           opt.wh_weight * wh_loss + opt.off_weight * off_loss + \
+           opt.amodel_offset * act_loss  ########### Add amodel center
 
     loss_stats = {'loss': loss, 'hm_loss': hm_loss, 'dep_loss': dep_loss, 
                   'dim_loss': dim_loss, 'rot_loss': rot_loss, 
-                  'wh_loss': wh_loss, 'off_loss': off_loss}
+                  'wh_loss': wh_loss, 'off_loss': off_loss,
+                  'act_loss': act_loss}  ########### Add amodel center
     return loss, loss_stats
 
 class DddTrainer(BaseTrainer):
@@ -100,7 +111,7 @@ class DddTrainer(BaseTrainer):
   
   def _get_losses(self, opt): # original no optimizer
     loss_states = ['loss', 'hm_loss', 'dep_loss', 'dim_loss', 'rot_loss', 
-                   'wh_loss', 'off_loss']
+                   'wh_loss', 'off_loss', 'act_loss']  ########### Add amodel center
     loss = DddLoss(opt)   # original no optimizer
     return loss_states, loss
 

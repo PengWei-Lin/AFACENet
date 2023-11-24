@@ -40,6 +40,61 @@ def conv3x3(in_planes, out_planes, stride=1):
                      padding=1, bias=False)
 
 
+class CSAModuleV2(nn.Module):
+    def __init__(self, in_size):
+        super(CSAModuleV2, self).__init__()
+        self.ch_at = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_size, in_size, kernel_size=1,
+                      stride=1, padding=0, bias=True),
+            nn.ReLU(inplace=True),    # important!!!
+            nn.Sigmoid(),
+        )
+
+        self.sp_at = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1,
+                      padding=0, bias=True, groups=1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        chat = self.ch_at(x)
+        spat = self.sp_at(x)
+
+        ch_out = x * chat
+        sp_out = x * spat
+
+        return ch_out + sp_out
+
+
+
+class CRC(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(CRC, self).__init__()
+        self.crc = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=3, stride=1, padding=1, bias=True, groups=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_size, out_size, kernel_size=1, stride=1, padding=1, bias=True, groups=1),
+        )
+    def forward(self, x):
+        return self.crc(x)
+
+    
+    
+class CPRC(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(CPRC, self).__init__()
+        self.cprc = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=3, stride=1, padding=1, bias=True, groups=1),
+            nn.PReLU(inplace=True),
+            nn.Conv2d(in_size, out_size, kernel_size=1, stride=1, padding=1, bias=True, groups=1),
+        )
+    def forward(self, x):
+        return self.cprc(x)
+
+
+
+
 class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, dilation=1):
         super(BasicBlock, self).__init__()
@@ -318,7 +373,7 @@ class DLA(nn.Module):
         # self.fc = fc
 
 
-def dlapnoncarafefull34(pretrained=True, **kwargs):  # DLA-34
+def dlaaware34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
@@ -391,16 +446,17 @@ class DLASeg(nn.Module):
         
         
         self.conv_up_level1 = DeformConv(512, 256)
-        self.carafe1 = CARAFEPack(channels = 256, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe1 = CARAFEPack(channels = 256, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.conv_cat1 = DeformConv(512, 256)
         
         self.conv_up_level2 = DeformConv(256, 128)
-        self.carafe2 = CARAFEPack(channels = 128, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe2 = CARAFEPack(channels = 128, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.conv_cat2 = DeformConv(256, 128)
         
         self.conv_up_level3 = DeformConv(128, 64)
-        self.carafe3 = CARAFEPack(channels = 64, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        #self.carafe3 = CARAFEPack(channels = 64, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.conv_cat3 = DeformConv(128, 64)
+        
         
         
         self.carafe_hm1_3 = CARAFEPack(channels = 3, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
@@ -421,19 +477,17 @@ class DLASeg(nn.Module):
         self.carafe_wh1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         self.carafe_wh2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
-        '''
-        self.carafe_up1_3 = CARAFEPack(channels = 3, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_3 = CARAFEPack(channels = 3, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
-        self.carafe_up1_1 = CARAFEPack(channels = 1, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_1 = CARAFEPack(channels = 1, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        # Add amodel center
+        self.carafe_act1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        self.carafe_act2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        # Add amodel center
         
-        self.carafe_up1_8 = CARAFEPack(channels = 8, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_8 = CARAFEPack(channels = 8, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
         
-        self.carafe_up1_2 = CARAFEPack(channels = 2, scale_factor=4, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        self.carafe_up2_2 = CARAFEPack(channels = 2, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-        '''
+        self.attention_head = CSAModuleV2(in_size=3)
+        #self.dep_CRC = CRC(in_size=3, out_size=1)
+        self.rot_CPRC = CRC(in_size=20, out_size=8)
+        
         
         self.heads = heads
         fpn_channels = [256, 128, 64]
@@ -450,6 +504,14 @@ class DLASeg(nn.Module):
                                       padding=final_kernel // 2, bias=True),
                         )
                         fc[-1].bias.data.fill_(-2.19)
+                    elif 'act' or 'rot':
+                        fc = nn.Sequential(
+                            nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
+                            nn.PReLU(),
+                            nn.Conv2d(head_conv, classes,
+                                      kernel_size=final_kernel, stride=1,
+                                      padding=final_kernel // 2, bias=True))
+                        fill_fc_weights(fc)
                     else:
                         fc = nn.Sequential(
                             nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
@@ -477,59 +539,52 @@ class DLASeg(nn.Module):
 
         # New
         # up_level1: torch.Size([b, 512, 14, 14])
-        #up_level1 = F.interpolate(self.conv_up_level1(x[5]), scale_factor=2, mode='bilinear', align_corners=True)
-        up_level1 = self.carafe1(self.conv_up_level1(x[5]))
+        up_level1 = F.interpolate(self.conv_up_level1(x[5]), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level1 = self.carafe1(self.conv_up_level1(x[5]))
+        #print("Level1:{}".format(up_level1.shape))
 
         concat_level1 = self.conv_cat1(torch.cat((up_level1, x[4]), dim=1))
         # up_level2: torch.Size([b, 256, 28, 28])
-        #up_level2 = F.interpolate(self.conv_up_level2(concat_level1), scale_factor=2, mode='bilinear', align_corners=True)
-        up_level2 = self.carafe2(self.conv_up_level2(concat_level1))
-        # print("Level2:{}".format(up_level2.shape))
+        up_level2 = F.interpolate(self.conv_up_level2(concat_level1), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level2 = self.carafe2(self.conv_up_level2(concat_level1))
+        #print("Level2:{}".format(up_level2.shape))
 
         concat_level2 = self.conv_cat2(torch.cat((up_level2, x[3]), dim=1))
         # up_level3: torch.Size([b, 128, 56, 56]),
-        #up_level3 = F.interpolate(self.conv_up_level3(concat_level2), scale_factor=2, mode='bilinear', align_corners=True)
-        up_level3 = self.carafe3(self.conv_up_level3(concat_level2))
-        # print("Level3:{}".format(up_level3.shape))
+        up_level3 = F.interpolate(self.conv_up_level3(concat_level2), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level3 = self.carafe3(self.conv_up_level3(concat_level2))
+        #print("Level3:{}".format(up_level3.shape))
         # up_level4: torch.Size([b, 64, 56, 56])
         concat_level3 = self.conv_cat3(torch.cat((up_level3, x[2]), dim=1))
-        # print("Level4:{}".format(up_level4.shape))
+        #print("Level4:{}".format(concat_level3.shape))
         
         
         ret = {}
+        #head_count = 0
         for head in self.heads:
+            #head_count += 1
+            #print(head_count)
             temp_outs = []
             # original     up_level2, up_level3, up_level4
             for fpn_idx, fdn_input in enumerate([concat_level1, concat_level2, concat_level3]):
                 fpn_out = self.__getattr__(
                     'fpn{}_{}'.format(fpn_idx, head))(fdn_input)
-                #_, _, fpn_out_h, fpn_out_w = fpn_out.size()
-                _, fpn_out_c, fpn_out_h, fpn_out_w = fpn_out.size()
+                _, _, fpn_out_h, fpn_out_w = fpn_out.size()
+                #_, fpn_out_c, fpn_out_h, fpn_out_w = fpn_out.size()
                 # Make sure the added features having same size of heatmap output
                 #if (fpn_out_w != hm_w) or (fpn_out_h != hm_h):
                     #fpn_out = F.interpolate(fpn_out, size=(hm_h, hm_w))
-                '''
-                if hm_w // fpn_out_w == 4 and fpn_out_c == 3:
-                    fpn_out = self.carafe_up1_3(fpn_out)
-                elif hm_w // fpn_out_w == 2 and fpn_out_c == 3:
-                    fpn_out =self.carafe_up2_3(fpn_out)
-                elif hm_w // fpn_out_w == 4 and fpn_out_c == 1:
-                    fpn_out = self.carafe_up1_1(fpn_out)
-                elif hm_w // fpn_out_w == 2 and fpn_out_c == 1:
-                    fpn_out = self.carafe_up2_1(fpn_out)
-                elif hm_w // fpn_out_w == 4 and fpn_out_c == 8:
-                    fpn_out = self.carafe_up1_8(fpn_out)
-                elif hm_w // fpn_out_w == 2 and fpn_out_c == 8:
-                    fpn_out = self.carafe_up2_8(fpn_out)
-                elif hm_w // fpn_out_w == 4 and fpn_out_c == 2:
-                    fpn_out = self.carafe_up1_2(fpn_out)
-                elif hm_w // fpn_out_w ==2 and fpn_out_c == 2:
-                    fpn_out = self.carafe_up2_2(fpn_out)
-                '''
+                
                 if hm_w // fpn_out_w == 4 and head == 'hm':
                     fpn_out = self.carafe_hm1_3(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'hm':
                     fpn_out =self.carafe_hm2_3(fpn_out)
+                # Add amodel center
+                elif hm_w // fpn_out_w == 4 and head == 'act':
+                    fpn_out = self.carafe_act1_2(fpn_out)
+                elif hm_w // fpn_out_w == 2 and head == 'act':
+                    fpn_out = self.carafe_act2_2(fpn_out)
+                # Add amodel center
                 elif hm_w // fpn_out_w == 4 and head == 'dep':
                     fpn_out = self.carafe_dep1_1(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'dep':
@@ -537,23 +592,64 @@ class DLASeg(nn.Module):
                 elif hm_w // fpn_out_w == 4 and head == 'rot':
                     fpn_out = self.carafe_rot1_8(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'rot':
-                    fpn_out =self.carafe_rot2_8(fpn_out)
+                    fpn_out = self.carafe_rot2_8(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'dim':
                     fpn_out = self.carafe_dim1_3(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'dim':
-                    fpn_out =self.carafe_dim2_3(fpn_out)
+                    fpn_out = self.carafe_dim2_3(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'wh':
                     fpn_out = self.carafe_wh1_2(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'wh':
-                    fpn_out =self.carafe_wh2_2(fpn_out)
+                    fpn_out = self.carafe_wh2_2(fpn_out)
                 elif hm_w // fpn_out_w == 4 and head == 'reg':
                     fpn_out = self.carafe_reg1_2(fpn_out)
                 elif hm_w // fpn_out_w == 2 and head == 'reg':
-                    fpn_out =self.carafe_reg2_2(fpn_out)
+                    fpn_out = self.carafe_reg2_2(fpn_out)
+                
+                #print("FPN out:{}".format(fpn_out.shape))
                 temp_outs.append(fpn_out)
             # Take the softmax in the keypoint feature pyramid network
+            #print("temp:{}".format(temp_outs))
             final_out = self.apply_kfpn(temp_outs)
-
+            
+            if head == 'hm':
+                final_out = self.attention_head(final_out)
+            elif head == 'act':
+                act_tmp = final_out
+            #elif head == 'dep':
+                #new_dep = torch.cat((final_out, act_tmp), dim=1)
+                #final_out = self.dep_CRC(new_dep)
+            elif head == 'rot':
+                rot_cls1 = final_out[:, 0:2, :, :] #2
+                rot_sin1 = final_out[:, 2:3, :, :] #1
+                rot_cos1 = final_out[:, 3:4, :, :] #1
+                
+                rot_cls2 = final_out[:, 4:6, :, :] #2
+                rot_sin2 = final_out[:, 6:7, :, :] #1
+                rot_cos2 = final_out[:, 7:8, :, :] #1
+                
+                rot_cls1 = torch.cat((rot_cls1, act_tmp), dim=1) #4
+                rot_sin1 = torch.cat((rot_sin1, act_tmp), dim=1) #3
+                rot_cos1 = torch.cat((rot_cos1, act_tmp), dim=1) #3
+                #print(rot_sin1.shape)
+                
+                rot_cls2 = torch.cat((rot_cls2, act_tmp), dim=1) #4
+                rot_sin2 = torch.cat((rot_sin2, act_tmp), dim=1) #3
+                rot_cos2 = torch.cat((rot_cos2, act_tmp), dim=1) #3
+                
+                rot_sc1 = torch.cat((rot_sin1, rot_cos1), dim=1)
+                rot_final1 = torch.cat((rot_sc1, rot_cls1), dim=1)
+                
+                rot_sc2 = torch.cat((rot_sin2, rot_cos2), dim=1)
+                rot_final2 = torch.cat((rot_sc2, rot_cls2), dim=1)
+                
+                rot_final = torch.cat((rot_final1, rot_final2), dim=1)
+                
+                final_out = self.rot_CPRC(rot_final)
+                
+                
+                
+            
             ret[head] = final_out
 
         return [ret]
@@ -568,7 +664,7 @@ class DLASeg(nn.Module):
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-    model = DLASeg('dlapnoncarafefull{}'.format(num_layers), heads,
+    model = DLASeg('dlaaware{}'.format(num_layers), heads,
                    pretrained=True,
                    down_ratio=down_ratio,
                    final_kernel=1,

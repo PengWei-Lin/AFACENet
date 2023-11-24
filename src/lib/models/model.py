@@ -63,6 +63,40 @@ from .networks.dlapfinalkfpn import get_pose_net as dlapfinalkfpn
 from .networks.dlapfinalkfpntwo import get_pose_net as dlapfinalkfpntwo
 from .networks.dlapheadtest import get_pose_net as dlapheadtest
 from .networks.dlapheadtesttwo import get_pose_net as dlapheadtesttwo
+from .networks.dlapreasonnohead import get_pose_net as dlapreasonnohead
+from .networks.dlapreasonfullcarafe import get_pose_net as dlapreasonfullcarafe
+from .networks.dlapfcsff import get_pose_net as dlapfcsff
+from .networks.dlapreasonat import get_pose_net as dlapreasonat
+from .networks.dlapreasonats import get_pose_net as dlapreasonats
+from .networks.dlapreasonatsbn import get_pose_net as dlapreasonatsbn
+from .networks.dlaat import get_pose_net as dlaat
+from .networks.dlaats import get_pose_net as dlaats
+from .networks.dlaatbn import get_pose_net as dlaatbn
+from .networks.dlaatsbn import get_pose_net as dlaatsbn
+from .networks.dlapreasonbn import get_pose_net as dlapreasonbn
+from .networks.dlapreasonnons import get_pose_net as dlapreasonnons
+from .networks.dlapreasonnonsbn import get_pose_net as dlapreasonnonsbn
+from .networks.dlaah import get_pose_net as dlaah
+from .networks.dlaahnobn import get_pose_net as dlaahnobn
+from .networks.dlaahs import get_pose_net as dlaahs
+from .networks.dlaahnobns import get_pose_net as dlaahnobns
+from .networks.dlaahp import get_pose_net as dlaahp
+from .networks.dlaahnobnp import get_pose_net as dlaahnobnp
+from .networks.dlaahpcsa import get_pose_net as dlaahpcsa
+from .networks.dlaahnobnpcsa import get_pose_net as dlaahnobnpcsa
+from .networks.dlaathsff import get_pose_net as dlaathsff
+from .networks.dlahead import get_pose_net as dlahead
+from .networks.dlaallhead import get_pose_net as dlaallhead
+from .networks.dlaallheadnos import get_pose_net as dlaallheadnos
+from .networks.dlafi import get_pose_net as dlafi
+from .networks.dlaallheadnew import get_pose_net as dlaallheadnew
+from .networks.dlaallheadnewnp import get_pose_net as dlaallheadnewnp
+from .networks.dlaallheadlast import get_pose_net as dlaallheadlast
+from .networks.dlaheads import get_pose_net as dlaheads
+from .networks.dlaatPRelu import get_pose_net as dlaatPRelu
+from .networks.dlaallheadPRelu import get_pose_net as dlaallheadPRelu
+from .networks.dlaaware import get_pose_net as dlaaware
+
 
 
 _model_factory = {
@@ -122,6 +156,39 @@ _model_factory = {
   'dlapfinalkfpntwo': dlapfinalkfpntwo,
   'dlapheadtest': dlapheadtest,
   'dlapheadtesttwo': dlapheadtesttwo,
+  'dlapreasonnohead': dlapreasonnohead,
+  'dlapreasonfullcarafe': dlapreasonfullcarafe,
+  'dlapfcsff': dlapfcsff,
+  'dlapreasonat': dlapreasonat,
+  'dlapreasonats': dlapreasonats,
+  'dlapreasonatsbn': dlapreasonatsbn,
+  'dlaat': dlaat,
+  'dlaats': dlaats,
+  'dlaatbn': dlaatbn,
+  'dlaatsbn': dlaatsbn,
+  'dlapreasonbn': dlapreasonbn,
+  'dlapreasonnons': dlapreasonnons,
+  'dlapreasonnonsbn': dlapreasonnonsbn,
+  'dlaah': dlaah,
+  'dlaahnobn': dlaahnobn,
+  'dlaahs': dlaahs,
+  'dlaahnobns': dlaahnobns,
+  'dlaahp': dlaahp,
+  'dlaahnobnp': dlaahnobnp,
+  'dlaahpcsa': dlaahpcsa,
+  'dlaahnobnpcsa': dlaahnobnpcsa,
+  'dlaathsff': dlaathsff,
+  'dlahead': dlahead,
+  'dlaallhead': dlaallhead,
+  'dlaallheadnos': dlaallheadnos,
+  'dlafi': dlafi,
+  'dlaallheadnew': dlaallheadnew,
+  'dlaallheadnewnp': dlaallheadnewnp,
+  'dlaallheadlast': dlaallheadlast,
+  'dlaheads': dlaheads,
+  'dlaatPRelu': dlaatPRelu,
+  'dlaallheadPRelu': dlaallheadPRelu,
+  'dlaaware': dlaaware,
 }
 
 def create_model(arch, heads, head_conv):

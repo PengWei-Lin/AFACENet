@@ -66,7 +66,7 @@ class DddDetector(BaseDetector):
       forward_time = time.time()
       
       dets = ddd_decode(output['hm'], output['rot'], output['dep'],
-                          output['dim'], wh=wh, reg=reg, K=self.opt.K)
+                          output['dim'], output['act'] ,wh=wh, reg=reg, K=self.opt.K)  ########### Add amodel center
     if return_time:
       return output, dets, forward_time
     else:
@@ -113,4 +113,4 @@ class DddDetector(BaseDetector):
     debugger.add_bird_view(
       results, center_thresh=self.opt.vis_thresh, img_id='bird_pred')
     debugger.show_all_imgs(pause=self.pause)
-    debugger.save_all_imgs(path = '/home/paul/CenterNet/exp/ddd/3dop_dlap_reasonable_v2_nc_visualization/debug', prefix = idx)
+    debugger.save_all_imgs(path = '/home/paul/CenterNet/exp/ddd/AFACENet_no_s_new_center_new_center/debug/', prefix = idx)

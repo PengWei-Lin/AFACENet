@@ -39,22 +39,25 @@ class CSAModuleV2(nn.Module):
         super(CSAModuleV2, self).__init__()
         self.ch_at = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(in_size, in_size, kernel_size=1,
+                      stride=1, padding=0, bias=True),
             nn.ReLU(inplace=True),
             nn.Sigmoid(),
         )
-        
+
         self.sp_at = nn.Sequential(
-            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1, padding=0, bias=True, groups=in_size),
+            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1,
+                      padding=0, bias=True, groups=1),
             nn.Sigmoid(),
         )
+
     def forward(self, x):
         chat = self.ch_at(x)
         spat = self.sp_at(x)
-        
+
         ch_out = x * chat
         sp_out = x * spat
-        
+
         return ch_out + sp_out
 
 
@@ -352,7 +355,7 @@ class DLA(nn.Module):
         # self.fc = fc
 
 
-def dla34(pretrained=True, **kwargs):  # DLA-34
+def dlaheads34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
@@ -503,7 +506,10 @@ class DLASeg(nn.Module):
             out_channel = channels[self.first_level]
 
         self.ida_up = IDAUp(out_channel, channels[self.first_level:self.last_level], 
-                            [2 ** i for i in range(self.last_level - self.first_level)])        
+                            [2 ** i for i in range(self.last_level - self.first_level)])
+
+        self.attention_head = CSAModuleV2(in_size=3)
+        
         self.heads = heads
         for head in self.heads:
             classes = self.heads[head]
@@ -561,11 +567,13 @@ class DLASeg(nn.Module):
         z = {}
         for head in self.heads:
             z[head] = self.__getattr__(head)(y[-1])
+            if head == 'hm':
+                z[head] = self.attention_head(z[head])
         return [z]
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-  model = DLASeg('dla{}'.format(num_layers), heads,
+  model = DLASeg('dlaheads{}'.format(num_layers), heads,
                  pretrained=True,
                  down_ratio=down_ratio,
                  final_kernel=1,

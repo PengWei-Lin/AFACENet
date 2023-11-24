@@ -14,48 +14,19 @@ import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 
 #from .DCNv2.dcn_v2 import DCN
-
 #from mmcv.ops import DeformConv2dPack as DCN
 from mmcv.ops import ModulatedDeformConv2dPack as DCN
 
-#from torchvision.ops import DeformConv2d as DCN
-
-#from mmcv.ops import CARAFEPack
+from mmcv.ops import CARAFEPack
 
 #from .dcn.modules.deform_conv import ModulatedDeformConvPack as DCN
 
 #from .dcnv1 import DeformableConv2d
 #from .dcnv2 import DeformableConv2d
 
-#from .dynamic_conv import Dynamic_conv2d
-
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
-
-
-class CSAModuleV2(nn.Module):
-    def __init__(self, in_size):
-        super(CSAModuleV2, self).__init__()
-        self.ch_at = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.ReLU(inplace=True),
-            nn.Sigmoid(),
-        )
-        
-        self.sp_at = nn.Sequential(
-            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1, padding=0, bias=True, groups=in_size),
-            nn.Sigmoid(),
-        )
-    def forward(self, x):
-        chat = self.ch_at(x)
-        spat = self.sp_at(x)
-        
-        ch_out = x * chat
-        sp_out = x * spat
-        
-        return ch_out + sp_out
 
 
 
@@ -69,19 +40,46 @@ def conv3x3(in_planes, out_planes, stride=1):
                      padding=1, bias=False)
 
 
+class CSAModuleV2(nn.Module):
+    def __init__(self, in_size):
+        super(CSAModuleV2, self).__init__()
+        self.ch_at = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_size, in_size, kernel_size=1,
+                      stride=1, padding=0, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Sigmoid(),
+        )
+
+        self.sp_at = nn.Sequential(
+            nn.Conv2d(in_size, in_size, kernel_size=1, stride=1,
+                      padding=0, bias=True, groups=in_size),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, x):
+        chat = self.ch_at(x)
+        spat = self.sp_at(x)
+
+        ch_out = x * chat
+        sp_out = x * spat
+
+        return ch_out + sp_out
+
+
+
+
 class BasicBlock(nn.Module):
     def __init__(self, inplanes, planes, stride=1, dilation=1):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3,
                                stride=stride, padding=dilation,
                                bias=False, dilation=dilation)
-        #self.conv1 = Dynamic_conv2d(in_planes=inplanes, out_planes=planes, kernel_size=3, stride=stride, padding=dilation, bias=False, dilation=dilation)
         self.bn1 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
                                stride=1, padding=dilation,
                                bias=False, dilation=dilation)
-        #self.conv2 = Dynamic_conv2d(in_planes=planes, out_planes=planes, kernel_size=3, stride=1, padding=dilation, bias=False, dilation=dilation)
         self.bn2 = nn.BatchNorm2d(planes, momentum=BN_MOMENTUM)
         self.stride = stride
 
@@ -100,8 +98,7 @@ class BasicBlock(nn.Module):
         out = self.relu(out)
 
         return out
-
-
+    
 class Bottleneck(nn.Module):
     expansion = 2
 
@@ -240,20 +237,18 @@ class Tree(nn.Module):
         self.project = None
         self.levels = levels
         if stride > 1:
-            self.downsample = nn.MaxPool2d(stride, stride=stride)
-            #self.downsample = nn.Sequential(
-                #nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=stride, padding=1),
-                #)
+            self.downsample = nn.MaxPool2d(stride, stride=stride)  # Max better!!!!!
+            
         if in_channels != out_channels:
             self.project = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels,
                           kernel_size=1, stride=1, bias=False),
-                nn.BatchNorm2d(out_channels, momentum=BN_MOMENTUM)
+                nn.BatchNorm2d(out_channels, momentum=BN_MOMENTUM),
             )
 
     def forward(self, x, residual=None, children=None):
         children = [] if children is None else children
-        bottom = self.downsample(x) if self.downsample else x
+        bottom = self.downsample(x) if self.downsample else x  #double SE 2.7058   # Head RWSE (New CSAMV2) 2.7167  # Single RWSE(New CSAMV2) 2.7429   # double eSE 2.7497   #Single eca 2.7506   #Single SE 2.7576   #Single CSAMV2+CSAMV2 Head 2.7721   #SE CSAMV2 2.7769    #SE_CSMA 2.7805     #dobule CSAM 2.7879  # Non 2.7889  # double eca 2.7894   #double RWSE (New CSAMV2) 2.7944    #Single CSAM 2.8173    # double SE with RWSE head 2.8528  loose!   #eca + RWSE head 2.8508  loose!  #eSE 2.86 loose!    #eca_CSMAV2 loose! 2.9xx  #double eca + CSAMV2 head 2.9906 fail..... 
         residual = self.project(bottom) if self.project else bottom
         if self.level_root:
             children.append(bottom)
@@ -348,18 +343,22 @@ class DLA(nn.Module):
         self.fc = nn.Conv2d(
             self.channels[-1], num_classes,
             kernel_size=1, stride=1, padding=0, bias=True)
-        self.load_state_dict(model_weights)
+        self.load_state_dict(model_weights, strict=False)
         # self.fc = fc
 
 
-def dla34(pretrained=True, **kwargs):  # DLA-34
+def dlafi34(pretrained=True, **kwargs):  # DLA-34
     model = DLA([1, 1, 1, 2, 2, 1],
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
-    
+    # block=BBlock, **kwargs)
+    # block=BottleneckX, **kwargs)
+    # block=Bottleneck, **kwargs)
     if pretrained:
-        model.load_pretrained_model(data='imagenet', name='dla34', hash='ba72cf86')
+        model.load_pretrained_model(
+            data='imagenet', name='dla34', hash='ba72cf86')
     return model
+
 
 class Identity(nn.Module):
 
@@ -389,7 +388,6 @@ def fill_up_weights(up):
         w[c, 0, :, :] = w[0, 0, :, :]
 
 
-
 class DeformConv(nn.Module):
     def __init__(self, chi, cho):
         super(DeformConv, self).__init__()
@@ -397,93 +395,13 @@ class DeformConv(nn.Module):
             nn.BatchNorm2d(cho, momentum=BN_MOMENTUM),
             nn.ReLU(inplace=True)
         )
-        #self.conv = DCN(chi, cho, kernel_size=(3,3), stride=1, padding=1, dilation=1, deformable_groups=1)
+        #self.conv = DCN(chi, cho, kernel_size=(3, 3), stride=1, padding=1, dilation=1, deformable_groups=1)
         self.conv = DCN(chi, cho, kernel_size=3, stride=1, padding=1, dilation=1, deform_groups=1)
-        #self.conv = DCN(chi, cho, kernel_size=3, stride=1, padding=1, dilation=1, groups=1)
-        
-        
         #self.conv = DeformableConv2d(chi, cho, kernel_size=3, padding=1, bias=False)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.actf(x)
-        return x
-
-
-class IDAUp(nn.Module):
-
-    def __init__(self, o, channels, up_f):
-        super(IDAUp, self).__init__()
-        for i in range(1, len(channels)):
-            c = channels[i]
-            f = int(up_f[i])  
-            #proj = Att_Proj_Node_n(c, o)
-            #node = Att_Proj_Node_n(o, o)
-            proj = DeformConv(c, o)
-            node = DeformConv(o, o)
-            
-            up = nn.ConvTranspose2d(o, o, f * 2, stride=f, 
-                                    padding=f // 2, output_padding=0,
-                                    groups=o, bias=False)
-            
-            #up = CARAFEPack(channels = o, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
-            fill_up_weights(up)
-            
-            #up = nn.Sequential(
-                    #nn.Upsample(size=None, scale_factor=f, mode='bilinear'),
-                    #nn.UpsamplingNearest2d(size=None, scale_factor=f),
-                    #nn.Conv2d(o, o, kernel_size=1, stride=1, padding=0, groups=o, bias=False)
-            #)
-            
-            setattr(self, 'proj_' + str(i), proj)
-            setattr(self, 'up_' + str(i), up)
-            setattr(self, 'node_' + str(i), node)
-                 
-        
-    def forward(self, layers, startp, endp):
-        for i in range(startp + 1, endp):
-            upsample = getattr(self, 'up_' + str(i - startp))
-            project = getattr(self, 'proj_' + str(i - startp))
-            layers[i] = upsample(project(layers[i]))
-            node = getattr(self, 'node_' + str(i - startp))
-            layers[i] = node(layers[i] + layers[i - 1])
-
-
-
-class DLAUp(nn.Module):
-    def __init__(self, startp, channels, scales, in_channels=None):
-        super(DLAUp, self).__init__()
-        self.startp = startp
-        if in_channels is None:
-            in_channels = channels
-        self.channels = channels
-        channels = list(channels)
-        scales = np.array(scales, dtype=int)
-        for i in range(len(channels) - 1):
-            j = -i - 2
-            setattr(self, 'ida_{}'.format(i),
-                    IDAUp(channels[j], in_channels[j:],
-                          scales[j:] // scales[j]))
-            scales[j + 1:] = scales[j]
-            in_channels[j + 1:] = [channels[j] for _ in channels[j + 1:]]
-
-    def forward(self, layers):
-        out = [layers[-1]] # start with 32
-        for i in range(len(layers) - self.startp - 1):
-            ida = getattr(self, 'ida_{}'.format(i))
-            ida(layers, len(layers) -i - 2, len(layers))
-            out.insert(0, layers[-1])
-        return out
-
-
-class Interpolate(nn.Module):
-    def __init__(self, scale, mode):
-        super(Interpolate, self).__init__()
-        self.scale = scale
-        self.mode = mode
-        
-    def forward(self, x):
-        x = F.interpolate(x, scale_factor=self.scale, mode=self.mode, align_corners=False)
         return x
 
 
@@ -496,80 +414,132 @@ class DLASeg(nn.Module):
         self.last_level = last_level
         self.base = globals()[base_name](pretrained=pretrained)
         channels = self.base.channels
-        scales = [2 ** i for i in range(len(channels[self.first_level:]))]
-        self.dla_up = DLAUp(self.first_level, channels[self.first_level:], scales)
 
         if out_channel == 0:
             out_channel = channels[self.first_level]
-
-        self.ida_up = IDAUp(out_channel, channels[self.first_level:self.last_level], 
-                            [2 ** i for i in range(self.last_level - self.first_level)])        
+        
+        
+        self.conv_up_level1 = DeformConv(512, 256)
+        #self.carafe1 = CARAFEPack(channels = 256, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        self.conv_cat1 = DeformConv(512, 256)
+        
+        self.conv_up_level2 = DeformConv(256, 128)
+        #self.carafe2 = CARAFEPack(channels = 128, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        self.conv_cat2 = DeformConv(256, 128)
+        
+        self.conv_up_level3 = DeformConv(128, 64)
+        #self.carafe3 = CARAFEPack(channels = 64, scale_factor=2, up_kernel = 5, up_group = 1, encoder_kernel = 3, encoder_dilation = 1, compressed_channels = 64)
+        self.conv_cat3 = DeformConv(128, 64)
+        
+        
+        self.attention_head = CSAModuleV2(in_size=3)
+        
         self.heads = heads
-        for head in self.heads:
-            classes = self.heads[head]
-            if head_conv > 0:
-                if 'hm' in head:
-                    fc = nn.Sequential(
-                        nn.Conv2d(channels[self.first_level], head_conv,
-                          kernel_size=3, padding=1, bias=True),
-                        nn.ReLU(inplace=True),
-                        nn.Conv2d(head_conv, classes, 
-                          kernel_size=final_kernel, stride=1, 
-                          padding=final_kernel // 2, bias=True),
-                        #CSAModuleV2(in_size=classes),
+        fpn_channels = [256, 128, 64]
+        for fpn_idx, fpn_c in enumerate(fpn_channels):
+            for head in sorted(self.heads):
+                classes = self.heads[head]
+                if head_conv > 0:
+                    if 'hm' in head:
+                        fc = nn.Sequential(
+                            nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
+                            nn.ReLU(inplace=True),
+                            nn.Conv2d(head_conv, classes,
+                                      kernel_size=final_kernel, stride=1,
+                                      padding=final_kernel // 2, bias=True),
                         )
-                    #fc[-2].bias.data.fill_(-2.19)
-                    fc[-1].bias.data.fill_(-2.19)
+                        fc[-1].bias.data.fill_(-2.19)
+                    else:
+                        fc = nn.Sequential(
+                            nn.Conv2d(fpn_c, head_conv, kernel_size=3, padding=1, bias=True),
+                            nn.ReLU(inplace=True),
+                            nn.Conv2d(head_conv, classes,
+                                      kernel_size=final_kernel, stride=1,
+                                      padding=final_kernel // 2, bias=True))
+                        fill_fc_weights(fc)
                 else:
-                    fc = nn.Sequential(
-                        nn.Conv2d(channels[self.first_level], head_conv,
-                                  kernel_size=3, padding=1, bias=True),
-                        nn.ReLU(inplace=True),
-                        nn.Conv2d(head_conv, classes,
-                                  kernel_size=final_kernel, stride=1,
-                                  padding=final_kernel // 2, bias=True))
-                    fill_fc_weights(fc)
-            else:
-              fc = nn.Conv2d(channels[self.first_level], classes, 
-                  kernel_size=final_kernel, stride=1, 
-                  padding=final_kernel // 2, bias=True)
-              if 'hm' in head:
-                fc.bias.data.fill_(-2.19)
-              else:
-                fill_fc_weights(fc)
-            self.__setattr__(head, fc)
+                    fc = nn.Conv2d(fpn_c, classes,
+                                   kernel_size=final_kernel, stride=1,
+                                   padding=final_kernel // 2, bias=True)
+                    if 'hm' in head:
+                        fc.bias.data.fill_(-2.19)
+                    else:
+                        fill_fc_weights(fc)
+                self.__setattr__('fpn{}_{}'.format(fpn_idx, head), fc)
+        
+                
 
     def forward(self, x):
+        _, _, input_h, input_w = x.size()
+        hm_h, hm_w = input_h // 4, input_w // 4
         x = self.base(x)
-        #print("Base0 :{}".format(x[0].shape))
-        #print("Base1 :{}".format(x[1].shape))
-        #print("Base2 :{}".format(x[2].shape))
-        #print("Base3 :{}".format(x[3].shape))
-        #print("Base4 :{}".format(x[4].shape))
-        #print("Base5 :{}".format(x[5].shape))
-        x = self.dla_up(x)
-        #print("UP0 :{}".format(x[0].shape))
-        #print("UP1 :{}".format(x[1].shape))
-        #print("UP2 :{}".format(x[2].shape))
-        #print("UP3 :{}".format(x[3].shape))
 
-        y = []
-        for i in range(self.last_level - self.first_level):
-            y.append(x[i].clone())
-        self.ida_up(y, 0, len(y))
+        # New
+        # up_level1: torch.Size([b, 512, 14, 14])
+        up_level1 = F.interpolate(self.conv_up_level1(x[5]), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level1 = self.carafe1(self.conv_up_level1(x[5]))
+        #print("Level1:{}".format(up_level1.shape))
 
-        z = {}
+        concat_level1 = self.conv_cat1(torch.cat((up_level1, x[4]), dim=1))
+        # up_level2: torch.Size([b, 256, 28, 28])
+        up_level2 = F.interpolate(self.conv_up_level2(concat_level1), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level2 = self.carafe2(self.conv_up_level2(concat_level1))
+        #print("Level2:{}".format(up_level2.shape))
+
+        concat_level2 = self.conv_cat2(torch.cat((up_level2, x[3]), dim=1))
+        # up_level3: torch.Size([b, 128, 56, 56]),
+        up_level3 = F.interpolate(self.conv_up_level3(concat_level2), scale_factor=2, mode='bilinear', align_corners=True)
+        #up_level3 = self.carafe3(self.conv_up_level3(concat_level2))
+        #print("Level3:{}".format(up_level3.shape))
+        # up_level4: torch.Size([b, 64, 56, 56])
+        concat_level3 = self.conv_cat3(torch.cat((up_level3, x[2]), dim=1))
+        #print("Level4:{}".format(concat_level3.shape))
+        
+        
+        ret = {}
+        #head_count = 0
         for head in self.heads:
-            z[head] = self.__getattr__(head)(y[-1])
-        return [z]
+            #head_count += 1
+            #print(head_count)
+            temp_outs = []
+            # original     up_level2, up_level3, up_level4
+            for fpn_idx, fdn_input in enumerate([concat_level1, concat_level2, concat_level3]):
+                fpn_out = self.__getattr__(
+                    'fpn{}_{}'.format(fpn_idx, head))(fdn_input)
+                _, _, fpn_out_h, fpn_out_w = fpn_out.size()
+                #_, fpn_out_c, fpn_out_h, fpn_out_w = fpn_out.size()
+                # Make sure the added features having same size of heatmap output
+                if (fpn_out_w != hm_w) or (fpn_out_h != hm_h):
+                    fpn_out = F.interpolate(fpn_out, size=(hm_h, hm_w))
+                
+                
+                #print("FPN out:{}".format(fpn_out.shape))
+                temp_outs.append(fpn_out)
+            # Take the softmax in the keypoint feature pyramid network
+            #print("temp:{}".format(temp_outs))
+            final_out = self.apply_kfpn(temp_outs)
+            
+            if head == 'hm':
+                final_out = self.attention_head(final_out)
+            
+            ret[head] = final_out
+
+        return [ret]
+
+    # Previous Modifield
+
+    def apply_kfpn(self, outs):
+        outs = torch.cat([out.unsqueeze(-1) for out in outs], dim=-1)
+        softmax_outs = F.softmax(outs, dim=-1)
+        ret_outs = (outs * softmax_outs).sum(dim=-1)
+        return ret_outs
     
 
 def get_pose_net(num_layers, heads, head_conv=256, down_ratio=4):
-  model = DLASeg('dla{}'.format(num_layers), heads,
-                 pretrained=True,
-                 down_ratio=down_ratio,
-                 final_kernel=1,
-                 last_level=5,
-                 head_conv=head_conv)
-  return model
-
+    model = DLASeg('dlafi{}'.format(num_layers), heads,
+                   pretrained=True,
+                   down_ratio=down_ratio,
+                   final_kernel=1,
+                   last_level=5,
+                   head_conv=head_conv)
+    return model

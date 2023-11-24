@@ -423,7 +423,8 @@ def exct_decode(
 
     return detections
 
-def ddd_decode(heat, rot, depth, dim, wh=None, reg=None, K=40):
+
+def ddd_decode(heat, rot, depth, dim, act, wh=None, reg=None, K=40):  ########### Add amodel center
     batch, cat, height, width = heat.size()
     # heat = torch.sigmoid(heat)
     # perform nms on heatmaps
@@ -439,6 +440,13 @@ def ddd_decode(heat, rot, depth, dim, wh=None, reg=None, K=40):
       xs = xs.view(batch, K, 1) + 0.5
       ys = ys.view(batch, K, 1) + 0.5
       
+    # Add amodel center
+    act = _transpose_and_gather_feat(act, inds)
+    act = act.view(batch, K, 2)
+    cx = xs.view(batch, K, 1) + act[:, :, 0:1]
+    cy = ys.view(batch, K, 1) + act[:, :, 1:2]
+    # Add amodel center
+      
     rot = _transpose_and_gather_feat(rot, inds)
     rot = rot.view(batch, K, 8)
     depth = _transpose_and_gather_feat(depth, inds)
@@ -449,17 +457,23 @@ def ddd_decode(heat, rot, depth, dim, wh=None, reg=None, K=40):
     scores = scores.view(batch, K, 1)
     xs = xs.view(batch, K, 1)
     ys = ys.view(batch, K, 1)
+    
+    # Add amodel center
+    cx = cx.view(batch, K, 1)
+    cy = cy.view(batch, K, 1)
+    # Add amodel center
       
     if wh is not None:
         wh = _transpose_and_gather_feat(wh, inds)
         wh = wh.view(batch, K, 2)
         detections = torch.cat(
-            [xs, ys, scores, rot, depth, dim, wh, clses], dim=2)
+            [xs, ys, cx, cy, scores, rot, depth, dim, wh, clses], dim=2)   # Add amodel center
     else:
         detections = torch.cat(
-            [xs, ys, scores, rot, depth, dim, clses], dim=2)
+            [xs, ys, cx, cy, scores, rot, depth, dim, clses], dim=2)   # Add amodel center
       
     return detections
+
 
 def ctdet_decode(heat, wh, reg=None, cat_spec_wh=False, K=100):
     batch, cat, height, width = heat.size()
@@ -569,3 +583,221 @@ def multi_pose_decode(
   detections = torch.cat([bboxes, scores, kps, clses], dim=2)
     
   return detections
+
+'''
+import matplotlib.pyplot as plt
+import numpy as np
+
+def gen_position(kps, dim, rot, meta, const):
+    b=kps.size(0)
+    c=kps.size(1)
+    
+    #print(type(meta['trans_output_inv']))
+    
+    opinv=meta['trans_output_inv']
+    calib=meta['calib']
+    
+    # Add keypoint self add
+    calib = np.expand_dims(calib, axis=0)
+    calib = torch.from_numpy(calib).cuda()
+    # Add keypoint self add
+    
+    
+    # Add keypoint self add
+    opinv = torch.from_numpy(opinv).cuda()
+    # Add keypoint self add
+    
+    opinv = opinv.unsqueeze(1)
+    opinv = opinv.expand(b, c, -1, -1).contiguous().view(-1, 2, 3).float()
+    kps = kps.view(b, c, -1, 2).permute(0, 1, 3, 2)
+    hom = torch.ones(b, c, 1, 9).cuda()
+    kps = torch.cat((kps, hom), dim=2).view(-1, 3, 9)
+    
+    #print("opinv: {}".format(type(opinv)))
+    #print("kps: {}".format(type(kps)))
+    #print("Calib: {}".format(type(calib)))
+    
+    kps = torch.bmm(opinv, kps).view(b, c, 2, 9)
+    kps = kps.permute(0, 1, 3, 2).contiguous().view(b, c, -1)  # 16.32,18
+    
+    #print("kps: {}".format(kps[:, 0:1, 0:1].shape))
+    #print("calib: {}".format(calib.shape))
+    #si = torch.zeros_like(kps[:, :, 0:1]) + calib[:, 0:1, 0:1]
+    #print("calib: {}".format(type(calib)))
+    #print("Calib: {}".format((calib[:, 0:1, 0:1])))
+    #print("KPS: {}".format(kps[:, :, 0:1]))
+    si = torch.zeros_like(kps[:, :, 0:1]) + calib[:, 0:1, 0:1]
+    alpha_idx = rot[:, :, 1] > rot[:, :, 5]
+    alpha_idx = alpha_idx.float()
+    alpha1 = torch.atan(rot[:, :, 2] / rot[:, :, 3]) + (-0.5 * np.pi)
+    alpha2 = torch.atan(rot[:, :, 6] / rot[:, :, 7]) + (0.5 * np.pi)
+    alpna_pre = alpha1 * alpha_idx + alpha2 * (1 - alpha_idx)
+    alpna_pre = alpna_pre.unsqueeze(2)
+    # alpna_pre=rot_gt
+
+    #rot_y = alpna_pre + torch.atan2(kps[:, :, 16:17] - calib[:, 0:1, 2:3], si)
+    rot_y = alpna_pre + torch.atan2(kps[:, :, 16:17] - calib[:, 0:1, 2:3], si)
+    rot_y[rot_y > np.pi] = rot_y[rot_y > np.pi] - 2 * np.pi
+    rot_y[rot_y < - np.pi] = rot_y[rot_y < - np.pi] + 2 * np.pi
+    
+    #print("Calib: {}".format(type(calib)))
+    # Add keypoint self add
+    #calib = calib.numpy()
+    # Add keypoint self add
+    calib = calib.unsqueeze(1)
+    calib = calib.expand(b, c, -1, -1).contiguous()
+    kpoint = kps[:, :, :16]
+    f = calib[:, :, 0, 0].unsqueeze(2)
+    f = f.expand_as(kpoint)
+    cx, cy = calib[:, :, 0, 2].unsqueeze(2), calib[:, :, 1, 2].unsqueeze(2)
+    cxy = torch.cat((cx, cy), dim=2)
+    cxy = cxy.repeat(1, 1, 8)  # b,c,16
+    kp_norm = (kpoint - cxy) / f
+
+    l = dim[:, :, 2:3]
+    h = dim[:, :, 0:1]
+    w = dim[:, :, 1:2]
+    cosori = torch.cos(rot_y)
+    sinori = torch.sin(rot_y)
+
+    B = torch.zeros_like(kpoint)
+    C = torch.zeros_like(kpoint)
+    
+    print("Const:{}".format(type(const)))
+    
+    kp = kp_norm.unsqueeze(3)  # b,c,16,1
+    const = const.expand(b, c, -1, -1)
+    A = torch.cat([const, kp], dim=3)
+
+    B[:, :, 0:1] = l * 0.5 * cosori + w * 0.5 * sinori
+    B[:, :, 1:2] = h * 0.5
+    B[:, :, 2:3] = l * 0.5 * cosori - w * 0.5 * sinori
+    B[:, :, 3:4] = h * 0.5
+    B[:, :, 4:5] = -l * 0.5 * cosori - w * 0.5 * sinori
+    B[:, :, 5:6] = h * 0.5
+    B[:, :, 6:7] = -l * 0.5 * cosori + w * 0.5 * sinori
+    B[:, :, 7:8] = h * 0.5
+    B[:, :, 8:9] = l * 0.5 * cosori + w * 0.5 * sinori
+    B[:, :, 9:10] = -h * 0.5
+    B[:, :, 10:11] = l * 0.5 * cosori - w * 0.5 * sinori
+    B[:, :, 11:12] = -h * 0.5
+    B[:, :, 12:13] = -l * 0.5 * cosori - w * 0.5 * sinori
+    B[:, :, 13:14] = -h * 0.5
+    B[:, :, 14:15] = -l * 0.5 * cosori + w * 0.5 * sinori
+    B[:, :, 15:16] = -h * 0.5
+
+    C[:, :, 0:1] = -l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 1:2] = -l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 2:3] = -l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 3:4] = -l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 4:5] = l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 5:6] = l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 6:7] = l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 7:8] = l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 8:9] = -l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 9:10] = -l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 10:11] = -l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 11:12] = -l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 12:13] = l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 13:14] = l * 0.5 * sinori - w * 0.5 * cosori
+    C[:, :, 14:15] = l * 0.5 * sinori + w * 0.5 * cosori
+    C[:, :, 15:16] = l * 0.5 * sinori + w * 0.5 * cosori
+
+    B = B - kp_norm * C
+
+    # A=A*kps_mask1
+
+    AT = A.permute(0, 1, 3, 2)
+    AT = AT.view(b * c, 3, 16)
+    A = A.view(b * c, 16, 3)
+    B = B.view(b * c, 16, 1).float()
+    # mask = mask.unsqueeze(2)
+
+    pinv = torch.bmm(AT, A)
+    pinv = torch.inverse(pinv)  # b*c 3 3
+
+
+
+    pinv = torch.bmm(pinv, AT)
+    pinv = torch.bmm(pinv, B)
+    pinv = pinv.view(b, c, 3, 1).squeeze(3)
+
+    #pinv[:, :, 1] = pinv[:, :, 1] + dim[:, :, 0] / 2
+    return pinv,rot_y,kps
+
+# Add keypoint
+def ddd_decode(heat, kps, rot, depth, dim, wh=None, reg=None, K=100, meta=None, const=None):   # K=40
+    batch, cat, height, width = heat.size()
+    
+   # print(meta)
+    
+    # Add keypoint
+    num_joints = kps.shape[1] // 2
+    # Add keypoint
+    
+    # heat = torch.sigmoid(heat)
+    # perform nms on heatmaps
+    heat = _nms(heat)
+    scores, inds, clses, ys, xs = _topk(heat, K=K)
+    clses  = clses.view(batch, K, 1).float()
+    # Add keypoint
+    kps = _transpose_and_gather_feat(kps, inds)
+    kps = kps.view(batch, K, num_joints * 2)
+    kps[..., ::2] += xs.view(batch, K, 1).expand(batch, K, num_joints)
+    kps[..., 1::2] += ys.view(batch, K, 1).expand(batch, K, num_joints)
+    # Add keypoint
+    
+    
+    #if reg is not None:
+      #reg = _transpose_and_gather_feat(reg, inds)
+      #reg = reg.view(batch, K, 2)
+      #xs = xs.view(batch, K, 1) + reg[:, :, 0:1]
+      #ys = ys.view(batch, K, 1) + reg[:, :, 1:2]
+    #else:
+      #xs = xs.view(batch, K, 1) + 0.5
+      #ys = ys.view(batch, K, 1) + 0.5
+    
+    scores = scores.view(batch, K, 1)
+    
+    dim = _transpose_and_gather_feat(dim, inds)
+    dim = dim.view(batch, K, 3)
+    
+    rot = _transpose_and_gather_feat(rot, inds)
+    rot = rot.view(batch, K, 8)
+    #depth = _transpose_and_gather_feat(depth, inds)
+    # Add keypoint
+    depth = _transpose_and_gather_feat(depth, inds)[:,:,0]
+    depth = depth.view(batch, K, 1)
+    # Add keypoint
+    
+    #Add keypoint
+    position,rot_y,kps_inv=gen_position(kps, dim, rot, meta, const)
+    bboxes_kp=kps.view(kps.size(0),kps.size(1),9,2)
+    box_min,_=torch.min(bboxes_kp,dim=2)
+    box_max,_=torch.max(bboxes_kp,dim=2)
+    bboxes=torch.cat((box_min,box_max),dim=2)
+    hm_score=kps[:,:,0:9]
+    # Add keypoint
+    
+    
+    
+    
+    #xs = xs.view(batch, K, 1)
+    #ys = ys.view(batch, K, 1)
+    
+      
+    if wh is not None:
+        wh = _transpose_and_gather_feat(wh, inds)
+        wh = wh.view(batch, K, 2)
+        #detections = torch.cat([xs, ys, scores, rot, depth, dim, wh, clses], dim=2) ###############################
+        
+        # Add keypoint
+        detections = torch.cat([bboxes, scores, kps_inv, dim, hm_score, rot_y, position, depth, clses], dim=2)
+        
+    else:
+        #detections = torch.cat([xs, ys, scores, rot, depth, dim, clses], dim=2) ################################
+        detections = torch.cat([bboxes, scores, kps_inv, dim, hm_score, rot_y, position, depth, clses], dim=2)
+        
+      
+    return detections
+'''

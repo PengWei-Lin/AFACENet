@@ -10,6 +10,8 @@ from __future__ import print_function
 
 import math
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 from .utils import _transpose_and_gather_feat
@@ -164,6 +166,7 @@ class NormRegL1Loss(nn.Module):
     loss = loss / (mask.sum() + 1e-4)
     return loss
 
+
 class RegWeightedL1Loss(nn.Module):
   def __init__(self):
     super(RegWeightedL1Loss, self).__init__()
@@ -176,6 +179,30 @@ class RegWeightedL1Loss(nn.Module):
     loss = loss / (mask.sum() + 1e-4)
     return loss
 
+
+'''
+# Add keypoint
+class RegWeightedL1Loss(nn.Module):
+    def __init__(self):
+        super(RegWeightedL1Loss, self).__init__()
+
+    def forward(self, output, mask, ind, target, dep):
+        dep=dep.squeeze(2)
+        dep[dep<5]=dep[dep<5]*0.01
+        dep[dep >= 5] = torch.log10(dep[dep >=5]-4)+0.1
+        pred = _transpose_and_gather_feat(output, ind)
+        mask = mask.float()
+        # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
+        #losss=torch.abs(pred * mask-target * mask)
+        #loss = F.l1_loss(pred * mask, target * mask, size_average=False)
+        loss=torch.abs(pred * mask-target * mask)
+        loss=torch.sum(loss,dim=2)*dep
+        loss=loss.sum()
+        loss = loss / (mask.sum() + 1e-4)
+
+        return loss
+'''
+
 class L1Loss(nn.Module):
   def __init__(self):
     super(L1Loss, self).__init__()
@@ -187,7 +214,16 @@ class L1Loss(nn.Module):
     return loss
 
 
+class depLoss(nn.Module):
+    def __init__(self):
+        super(depLoss, self).__init__()
 
+    def forward(self, output, mask, ind, target):
+        pred = _transpose_and_gather_feat(output, ind)
+        mask = mask.unsqueeze(2).expand_as(pred).float()
+        # loss= torch.log(torch.abs((target * mask)-(pred * mask))).mean()
+        loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
+        return loss
 
 class L1Loss_Balanced(nn.Module):
     """Balanced L1 Loss

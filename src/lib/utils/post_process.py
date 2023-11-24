@@ -27,22 +27,46 @@ def ddd_post_process_2d(dets, c, s, opt):
   include_wh = dets.shape[2] > 16
   for i in range(dets.shape[0]):
     top_preds = {}
-    dets[i, :, :2] = transform_preds(
-          dets[i, :, 0:2], c[i], s[i], (opt.output_w, opt.output_h))
+    
+    
+    dets[i, :, :2] = transform_preds(dets[i, :, 0:2], c[i], s[i], (opt.output_w, opt.output_h))
+    
+    # Add amodel center
+    dets[i, :, 2:4] = transform_preds(dets[i, :, 2:4], c[i], s[i], (opt.output_w, opt.output_h))
+    # Add amodel center
+    
     classes = dets[i, :, -1]
     for j in range(opt.num_classes):
       inds = (classes == j)
+      '''
       top_preds[j + 1] = np.concatenate([
         dets[i, inds, :3].astype(np.float32),
         get_alpha(dets[i, inds, 3:11])[:, np.newaxis].astype(np.float32),
         get_pred_depth(dets[i, inds, 11:12]).astype(np.float32),
         dets[i, inds, 12:15].astype(np.float32)], axis=1)
+      '''
+      # Add amodel center
+      top_preds[j + 1] = np.concatenate([
+        dets[i, inds, :5].astype(np.float32),
+        get_alpha(dets[i, inds, 5:13])[:, np.newaxis].astype(np.float32),
+        get_pred_depth(dets[i, inds, 13:14]).astype(np.float32),
+        dets[i, inds, 14:17].astype(np.float32)], axis=1)
+      # Add amodel center
       if include_wh:
+        '''
         top_preds[j + 1] = np.concatenate([
           top_preds[j + 1],
           transform_preds(
             dets[i, inds, 15:17], c[i], s[i], (opt.output_w, opt.output_h))
           .astype(np.float32)], axis=1)
+        '''
+        # Add amodel center
+        top_preds[j + 1] = np.concatenate([
+          top_preds[j + 1],
+          transform_preds(
+            dets[i, inds, 17:19], c[i], s[i], (opt.output_w, opt.output_h))
+          .astype(np.float32)], axis=1)
+        # Add amodel center
     ret.append(top_preds)
   return ret
 
@@ -55,14 +79,32 @@ def ddd_post_process_3d(dets, calibs):
     for cls_ind in dets[i].keys():
       preds[cls_ind] = []
       for j in range(len(dets[i][cls_ind])):
+        '''
         center = dets[i][cls_ind][j][:2]
         score = dets[i][cls_ind][j][2]
         alpha = dets[i][cls_ind][j][3]
         depth = dets[i][cls_ind][j][4]
         dimensions = dets[i][cls_ind][j][5:8]
         wh = dets[i][cls_ind][j][8:10]
+        '''
+        # Add amodel center
+        center = dets[i][cls_ind][j][:2]
+        center3d = dets[i][cls_ind][j][2:4]
+        score = dets[i][cls_ind][j][4]
+        alpha = dets[i][cls_ind][j][5]
+        depth = dets[i][cls_ind][j][6]
+        dimensions = dets[i][cls_ind][j][7:10]
+        wh = dets[i][cls_ind][j][10:12]
+        # Add amodel center
+        '''
         locations, rotation_y = ddd2locrot(
           center, alpha, dimensions, depth, calibs[0])
+        '''
+        
+        # Add amodel center
+        locations, rotation_y = ddd2locrot(
+          center3d, alpha, dimensions, depth, calibs[0])
+        # Add amodel center
         bbox = [center[0] - wh[0] / 2, center[1] - wh[1] / 2,
                 center[0] + wh[0] / 2, center[1] + wh[1] / 2]
         pred = [alpha] + bbox + dimensions.tolist() + \

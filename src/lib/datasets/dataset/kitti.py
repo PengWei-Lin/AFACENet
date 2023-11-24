@@ -85,7 +85,7 @@ class KITTI(data.Dataset):
   def run_eval(self, results, save_dir):
     self.save_results(results, save_dir)
     os.system('./tools/kitti_eval/evaluate_object_3d_offline ' + \
-              '../data/kitti/old_train/label_2 ' + \
+              '../data/kitti/training/label_2 ' + \
               #'../data/kitti/training/label_val ' + \
               '{}/results/'.format(save_dir))
     

@@ -175,9 +175,13 @@ class opts(object):
     # ddd
     self.parser.add_argument('--dep_weight', type=float, default=1,
                              help='loss weight for depth.')
-    self.parser.add_argument('--dim_weight', type=float, default=1,
+    # Add amodel center
+    self.parser.add_argument('--amodel_offset', type=float, default=1,
+                             help='loss weight for 3d center.')
+    # Add amodel center
+    self.parser.add_argument('--dim_weight', type=float, default=2,  # 1
                              help='loss weight for 3d bounding box size.')
-    self.parser.add_argument('--rot_weight', type=float, default=1,
+    self.parser.add_argument('--rot_weight', type=float, default=2,  # 1
                              help='loss weight for orientation.')
     self.parser.add_argument('--peak_thresh', type=float, default=0.2)
     
@@ -285,6 +289,12 @@ class opts(object):
       model_path = opt.save_dir[:-4] if opt.save_dir.endswith('TEST') \
                   else opt.save_dir
       opt.load_model = os.path.join(model_path, 'model_last.pth')
+      
+    if opt.dataset == 'nuscense':
+        opt.coor_thresh = 1
+    if opt.dataset == 'kitti':
+        opt.coor_thresh = 0.3
+      
     return opt
 
   def update_dataset_info_and_set_heads(self, opt, dataset):
@@ -312,12 +322,20 @@ class opts(object):
         opt.heads.update({'reg_t': 2, 'reg_l': 2, 'reg_b': 2, 'reg_r': 2})
     elif opt.task == 'ddd':
       # assert opt.dataset in ['gta', 'kitti', 'viper']
-      opt.heads = {'hm': opt.num_classes, 'dep': 1, 'rot': 8, 'dim': 3}
+      #opt.heads = {'hm': opt.num_classes, 'dep':1, 'rot': 8,'dim':3}
+      
+      # Add amodel center
+      opt.heads = {'hm': opt.num_classes, 'act':2, 'dep':1, 'rot': 8,'dim':3}
+      # Add amodel center
       if opt.reg_bbox:
         opt.heads.update(
           {'wh': 2})
       if opt.reg_offset:
         opt.heads.update({'reg': 2})
+      #if opt.hm_hp:
+        #opt.heads.update({'hm_hp': 9})
+      #if opt.reg_hp_offset:
+        #opt.heads.update({'hp_offset': 2})
     elif opt.task == 'ctdet':
       # assert opt.dataset in ['pascal', 'coco']
       opt.heads = {'hm': opt.num_classes,
