@@ -7,6 +7,88 @@ The respository is for AFACENet. The paper is submmit to IEEE Transactions on In
 ## Detection result
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/cosS32_K.jpeg)
 
+## Comparison Detail
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/11add_pred.png)
+### AFACENet
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/11bird_pred.png)
+### AFACENet's BEV
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/12car_pose.png)
+### RTM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/12car_posekm.png)
+### KM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000024.png)
+### SMOKE
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/12_output.jpg)
+### LiDAR Ground Truth
+
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/15add_pred.png)
+### AFACENet
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/15bird_pred.png)
+### AFACENet's BEV
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/16car_pose.png)
+### RTM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/16car_posekm.png)
+### KM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000031.png)
+### SMOKE
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/16_output.jpg)
+### LiDAR Ground Truth
+
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/40add_pred.png)
+### AFACENet
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/40bird_pred.png)
+### AFACENet's BEV
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/41car_pose.png)
+### RTM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/41car_posekm.png)
+### KM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000093.png)
+### SMOKE
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/41_output.jpg)
+### LiDAR Ground Truth
+
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/46add_pred.png)
+### AFACENet
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/47bird_pred.png)
+### AFACENet's BEV
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/47car_pose.png)
+### RTM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/47car_posekm.png)
+### KM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000107.png)
+### SMOKE
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/47_output.jpg)
+### LiDAR Ground Truth
+
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/67add_pred.png)
+### AFACENet
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/67bird_pred.png)
+### AFACENet's BEV
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/68car_pose.png)
+### RTM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/68car_posekm.png)
+### KM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000159.png)
+### SMOKE
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/68_output.jpg)
+### LiDAR Ground Truth
+
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/74add_pred.png)
+### AFACENet
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/74bird_pred.png)
+### AFACENet's BEV
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/75car_pose.png)
+### RTM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/75car_posekm.png)
+### KM3D
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000174.png.png)
+### SMOKE
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/75_output.jpg)
+### LiDAR Ground Truth
+
+
+
+
 ## Model link
 [Our model](https://drive.google.com/file/d/1pE3A22MJeqjE_L8YuwoBWUqXRJ6hb9Qg/view?usp=sharing)
 
