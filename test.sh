@@ -1,7 +1,7 @@
 cd src
 
 
-python3 test.py --task ddd --exp_id AFACENet_no_s_new_center --arch dlapreasonnons_34 --dataset kitti --kitti_split 3dop --load_model ../exp/ddd/AFACENet_no_s_new_center_new_center/model_last.pth --debug 4
+python3 test.py --task ddd --exp_id AFANCENet_sc --arch dlasc_34 --dataset kitti --kitti_split 3dop --debug 4 --load_model ../exp/ddd/AFANCENet_sc/model_80.pth
 
 
 

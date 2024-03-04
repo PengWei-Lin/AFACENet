@@ -96,7 +96,38 @@ from .networks.dlaheads import get_pose_net as dlaheads
 from .networks.dlaatPRelu import get_pose_net as dlaatPRelu
 from .networks.dlaallheadPRelu import get_pose_net as dlaallheadPRelu
 from .networks.dlaaware import get_pose_net as dlaaware
-
+from .networks.dlasc import get_pose_net as dlasc
+from .networks.dlaoffsetaware import get_pose_net as dlaoffsetaware
+from .networks.dlaoffwhaware import get_pose_net as dlaoffwhaware
+from .networks.dlawhaware import get_pose_net as dlawhaware
+from .networks.dlaupt import get_pose_net as dlaupt
+from .networks.dlaneckt import get_pose_net as dlaneckt
+from .networks.dlasct import get_pose_net as dlasct
+from .networks.dlaneckfpn import get_pose_net as dlaneckfpn
+from .networks.dlaneckCM import get_pose_net as dlaneckCM
+from .networks.dlaneckfpncarafe import get_pose_net as dlaneckfpncarafe
+from .networks.dlanecknasfpn import get_pose_net as dlanecknasfpn
+from .networks.dlaneckbfp import get_pose_net as dlaneckbfp
+from .networks.dlaneckDE import get_pose_net as dlaneckDE
+from .networks.dlacsa import get_pose_net as dlacsa
+from .networks.dlase import get_pose_net as dlase
+from .networks.dlaese import get_pose_net as dlaese
+from .networks.dlaeca import get_pose_net as dlaeca
+from .networks.dlacbam import get_pose_net as dlacbam
+from .networks.dlada import get_pose_net as dlada
+from .networks.dladc import get_pose_net as dladc
+from .networks.dlady import get_pose_net as dlady
+from .networks.dlask import get_pose_net as dlask
+from .networks.dlafpn import get_pose_net as dlafpn
+from .networks.dlaCM import get_pose_net as dlaCM
+from .networks.dlafpncarafe import get_pose_net as dlafpncarafe
+from .networks.dlaDE import get_pose_net as dlaDE
+from .networks.dlaneckkfpn import get_pose_net as dlaneckkfpn
+from .networks.dlascno import get_pose_net as dlascno
+from .networks.dlascfc import get_pose_net as dlascfc
+from .networks.dlascfi import get_pose_net as dlascfi
+from .networks.dlafpnvt import get_pose_net as dlafpnvt
+from .networks.dlafpncarafevt import get_pose_net as dlafpncarafevt
 
 
 _model_factory = {
@@ -189,6 +220,38 @@ _model_factory = {
   'dlaatPRelu': dlaatPRelu,
   'dlaallheadPRelu': dlaallheadPRelu,
   'dlaaware': dlaaware,
+  'dlasc': dlasc,
+  'dlaoffsetaware': dlaoffsetaware,
+  'dlaoffwhaware': dlaoffwhaware,
+  'dlawhaware': dlawhaware,
+  'dlaupt': dlaupt,
+  'dlaneckt':dlaneckt,
+  'dlasct': dlasct,
+  'dlaneckfpn': dlaneckfpn,
+  'dlaneckCM': dlaneckCM,
+  'dlaneckfpncarafe': dlaneckfpncarafe,
+  'dlanecknasfpn': dlanecknasfpn,
+  'dlaneckbfp': dlaneckbfp,
+  'dlaneckDE': dlaneckDE,
+  'dlacsa': dlacsa,
+  'dlase': dlase,
+  'dlaese': dlaese,
+  'dlaeca': dlaeca,
+  'dlacbam': dlacbam,
+  'dlada': dlada,
+  'dladc': dladc,
+  'dlady': dlady,
+  'dlask': dlask,
+  'dlafpn': dlafpn,
+  'dlaCM': dlaCM,
+  'dlafpncarafe': dlafpncarafe,
+  'dlaDE': dlaDE,
+  'dlaneckkfpn': dlaneckkfpn,
+  'dlascno': dlascno,
+  'dlascfc': dlascfc,
+  'dlascfi': dlascfi,
+  'dlafpnvt': dlafpnvt,
+  'dlafpncarafevt': dlafpncarafevt,
 }
 
 def create_model(arch, heads, head_conv):

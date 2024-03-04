@@ -2,10 +2,10 @@
 The respository is for AFACENet. The paper is submmit to IEEE Transactions on Instrumentation and Measurement. The paper is under review.
 
 ## Overall architecture
-![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/ZHAlKj9x.jpeg)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/LtimDmlS.jpeg)
 
 ## Detection result
-![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/cosS32_K.jpeg)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/QW3avUlX.jpeg)
 
 ## Comparison Detail
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/11add_pred.png)
@@ -90,14 +90,14 @@ The respository is for AFACENet. The paper is submmit to IEEE Transactions on In
 
 
 ## Model link
-[Our model](https://drive.google.com/file/d/1pE3A22MJeqjE_L8YuwoBWUqXRJ6hb9Qg/view?usp=sharing)
+[Our model](https://drive.google.com/file/d/19a2EZlV_THCz3UOiJo95KMKHdJkBrvq1/view?usp=sharing)
 
 ## Model training
 ./ddd_3dop.sh
 
 or
 
-python3 main.py --task ddd --exp_id AFACENet_no_s_new_center --arch dlapreasonnons_34 --head_conv 256 --dataset kitti --kitti_split 3dop --batch_size 20 --num_epochs 100 --lr_step 45,60,70,80,90 --gpus 0 --num_workers 20
+python3 main.py --task ddd --exp_id AFANCENet_sc --arch dlasc_34 --head_conv 256 --dataset kitti --kitti_split 3dop --batch_size 20 --num_epochs 100 --lr_step 45,60,70,80,90 --gpus 0 --num_workers 20
 
 note: You can change the configuration in ddd_3dop.sh or the command
 
@@ -106,7 +106,7 @@ note: You can change the configuration in ddd_3dop.sh or the command
 
 or
 
-python3 ./src/demo.py --task ddd --arch dlapreasonnons_34 --load_model ./exp/ddd/AFACENet_no_s_new_center/model_100.pth --dataset kitti --demo single_image_image_folder_or_video
+python3 ./src/demo.py --task ddd --arch dlasc_34 --load_model ./exp/ddd/AFACENet_sc/model_100.pth --dataset kitti --demo single_image_image_folder_or_video
 
 note: You can change the configuration in Monocular_3D_Detection_demo.sh or the command
 
@@ -115,7 +115,7 @@ note: You can change the configuration in Monocular_3D_Detection_demo.sh or the 
 
 or
 
-python3 test.py --task ddd --exp_id 3dop_dlap_reasonable_nc --arch dlapreasonnons_34 --dataset kitti --kitti_split 3dop --debug 4 --load_model ../exp/ddd/AFACENet_no_s_new_center/model_100.pth
+python3 test.py --task ddd --exp_id AFANCENet_sc --arch dlasc_34 --dataset kitti --kitti_split 3dop --debug 4 --load_model ../exp/ddd/AFANCENet_sc/model_80.pth
 
 note: You can change the configuration in test.sh or the command
 
