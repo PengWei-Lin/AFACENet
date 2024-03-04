@@ -64,9 +64,9 @@ The respository is for AFACENet. The paper is submmit to IEEE Transactions on In
 ### AFACENet
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/66bird_pred.png)
 ### AFACENet's BEV
-![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/67car_pose.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/67car_poser.png)
 ### RTM3D
-![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/67car_posekm.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/67car_pose.png)
 ### KM3D
 ![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/000156.png)
 ### SMOKE
