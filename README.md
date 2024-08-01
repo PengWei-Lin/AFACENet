@@ -130,6 +130,19 @@ python3 test.py --task ddd --exp_id AFANCENet_sc --arch dlasc_34 --dataset kitti
 
 note: You can change the configuration in test.sh or the command
 
+## Validation on nuScenes
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/0.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/1.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/2.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/3.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/4.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/5.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/6.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/7.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/8.png)
+![image](https://github.com/PengWei-Lin/AFACENet/blob/main/pic/9.png)
+
+
 ## References
 [1] [CenterNet](https://github.com/xingyizhou/CenterNet)
 
